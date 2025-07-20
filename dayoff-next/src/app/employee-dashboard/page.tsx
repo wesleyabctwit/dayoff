@@ -1,17 +1,67 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 export default function EmployeeDashboard() {
   const [tab, setTab] = useState('overview');
+  const [overview, setOverview] = useState<any>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  // 請假申請表單
+  const [form, setForm] = useState({
+    date: '',
+    period: '',
+    type: '',
+    days: '',
+    reason: ''
+  });
+  const [submitMsg, setSubmitMsg] = useState('');
 
-  // 切換分頁
-  const showTab = (tabName: string) => setTab(tabName);
+  // 依分頁載入資料
+  useEffect(() => {
+    setError('');
+    setLoading(true);
+    if (tab === 'overview') {
+      fetch('/api/employee-dashboard/overview')
+        .then(res => res.json())
+        .then(data => setOverview(data))
+        .catch(() => setError('載入失敗'))
+        .finally(() => setLoading(false));
+    } else if (tab === 'history') {
+      fetch('/api/employee-dashboard/leave-history')
+        .then(res => res.json())
+        .then(data => setHistory(data.history))
+        .catch(() => setError('載入失敗'))
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [tab]);
 
-  // 處理請假申請表單提交
-  const submitLeaveRequest = (e: React.FormEvent) => {
+  // 處理請假申請表單送出
+  const submitLeaveRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('已提交請假申請（範例）');
+    setSubmitMsg('');
+    setLoading(true);
+    try {
+      const res = await fetch('/api/employee-dashboard/submit-leave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSubmitMsg('申請成功！');
+        setForm({ date: '', period: '', type: '', days: '', reason: '' });
+      } else {
+        setSubmitMsg('申請失敗');
+      }
+    } catch {
+      setSubmitMsg('伺服器錯誤');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -25,19 +75,20 @@ export default function EmployeeDashboard() {
           </div>
         </div>
         <div className="nav-tabs">
-          <button className={`nav-tab${tab === 'overview' ? ' active' : ''}`} onClick={() => showTab('overview')}>總覽</button>
-          <button className={`nav-tab${tab === 'apply' ? ' active' : ''}`} onClick={() => showTab('apply')}>請假申請</button>
-          <button className={`nav-tab${tab === 'history' ? ' active' : ''}`} onClick={() => showTab('history')}>請假紀錄</button>
+          <button className={`nav-tab${tab === 'overview' ? ' active' : ''}`} onClick={() => setTab('overview')}>總覽</button>
+          <button className={`nav-tab${tab === 'apply' ? ' active' : ''}`} onClick={() => setTab('apply')}>請假申請</button>
+          <button className={`nav-tab${tab === 'history' ? ' active' : ''}`} onClick={() => setTab('history')}>請假紀錄</button>
         </div>
         <div className="content">
+          {error && <div style={{ color: 'red', marginBottom: 16 }}>{error}</div>}
+          {loading && <div>載入中...</div>}
           {/* 總覽頁面 */}
-          {tab === 'overview' && (
+          {tab === 'overview' && overview && !loading && (
             <div id="overview" className="tab-content">
               <div className="card">
                 <h3>假期餘額</h3>
                 <div id="leave-balance" className="leave-balance">
-                  {/* 假期餘額將由 JavaScript 載入 */}
-                  <span>特休：10 天，病假：5 天</span>
+                  <span>特休：{overview.balance.annual} 天，病假：{overview.balance.sick} 天</span>
                 </div>
               </div>
               <div className="card">
@@ -45,15 +96,15 @@ export default function EmployeeDashboard() {
                 <div className="form-row">
                   <div className="form-group">
                     <label>姓名</label>
-                    <input type="text" value="張小明" readOnly />
+                    <input type="text" value={overview.profile.name} readOnly />
                   </div>
                   <div className="form-group">
                     <label>Email</label>
-                    <input type="email" value="ming@company.com" readOnly />
+                    <input type="email" value={overview.profile.email} readOnly />
                   </div>
                   <div className="form-group">
                     <label>到職日</label>
-                    <input type="date" value="2023-01-15" readOnly />
+                    <input type="date" value={overview.profile.hireDate} readOnly />
                   </div>
                 </div>
               </div>
@@ -68,11 +119,11 @@ export default function EmployeeDashboard() {
                   <div className="form-row">
                     <div className="form-group">
                       <label htmlFor="leave-date">請假日期</label>
-                      <input type="date" id="leave-date" name="leave-date" required />
+                      <input type="date" id="leave-date" name="leave-date" required value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
                     </div>
                     <div className="form-group">
                       <label htmlFor="leave-period">時段</label>
-                      <select id="leave-period" name="leave-period" required>
+                      <select id="leave-period" name="leave-period" required value={form.period} onChange={e => setForm(f => ({ ...f, period: e.target.value }))}>
                         <option value="">請選擇時段</option>
                         <option value="全天">全天</option>
                         <option value="上午">上午</option>
@@ -83,7 +134,7 @@ export default function EmployeeDashboard() {
                   <div className="form-row">
                     <div className="form-group">
                       <label htmlFor="leave-type">假別</label>
-                      <select id="leave-type" name="leave-type" required>
+                      <select id="leave-type" name="leave-type" required value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
                         <option value="">請選擇假別</option>
                         <option value="特休">特休</option>
                         <option value="補休">補休</option>
@@ -97,29 +148,54 @@ export default function EmployeeDashboard() {
                     </div>
                     <div className="form-group">
                       <label htmlFor="leave-days">天數</label>
-                      <input type="number" id="leave-days" name="leave-days" min="0.5" max="30" step="0.5" required />
+                      <input type="number" id="leave-days" name="leave-days" min="0.5" max="30" step="0.5" required value={form.days} onChange={e => setForm(f => ({ ...f, days: e.target.value }))} />
                     </div>
                   </div>
                   <div className="form-group">
                     <label htmlFor="leave-reason">請假原因</label>
-                    <textarea id="leave-reason" name="leave-reason" placeholder="請詳細說明請假原因..." required></textarea>
+                    <textarea id="leave-reason" name="leave-reason" placeholder="請詳細說明請假原因..." required value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}></textarea>
                   </div>
                   <div className="form-group">
-                    <button type="submit" className="btn btn-success">提交申請</button>
-                    <button type="reset" className="btn btn-secondary">重置</button>
+                    <button type="submit" className="btn btn-success" disabled={loading}>{loading ? '送出中...' : '提交申請'}</button>
+                    <button type="reset" className="btn btn-secondary" onClick={() => setForm({ date: '', period: '', type: '', days: '', reason: '' })}>重置</button>
                   </div>
+                  {submitMsg && <div style={{ color: submitMsg.includes('成功') ? 'green' : 'red', marginTop: 8 }}>{submitMsg}</div>}
                 </form>
               </div>
             </div>
           )}
           {/* 請假紀錄頁面 */}
-          {tab === 'history' && (
+          {tab === 'history' && !loading && (
             <div id="history" className="tab-content">
               <div className="card">
                 <h3>請假紀錄</h3>
                 <div id="leave-history" className="table-container">
-                  {/* 請假紀錄將由 JavaScript 載入 */}
-                  <span>尚無請假紀錄</span>
+                  {history.length === 0 ? <span>尚無請假紀錄</span> : (
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>日期</th>
+                          <th>假別</th>
+                          <th>時段</th>
+                          <th>天數</th>
+                          <th>原因</th>
+                          <th>狀態</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {history.map((h, i) => (
+                          <tr key={i}>
+                            <td>{h.date}</td>
+                            <td>{h.type}</td>
+                            <td>{h.period}</td>
+                            <td>{h.days}</td>
+                            <td>{h.reason}</td>
+                            <td><span className={`status ${h.status}`}>{h.status === 'pending' ? '待審核' : h.status === 'approved' ? '已核准' : h.status}</span></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
             </div>

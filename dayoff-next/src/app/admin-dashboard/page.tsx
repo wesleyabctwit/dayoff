@@ -1,12 +1,42 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState('overview');
+  // 狀態
+  const [overview, setOverview] = useState<any>(null);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // 切換分頁
-  const showTab = (tabName: string) => setTab(tabName);
+  // 依分頁載入資料
+  useEffect(() => {
+    setError('');
+    setLoading(true);
+    if (tab === 'overview') {
+      fetch('/api/admin-dashboard/overview')
+        .then(res => res.json())
+        .then(data => setOverview(data))
+        .catch(() => setError('載入失敗'))
+        .finally(() => setLoading(false));
+    } else if (tab === 'employees') {
+      fetch('/api/admin-dashboard/employees')
+        .then(res => res.json())
+        .then(data => setEmployees(data.employees))
+        .catch(() => setError('載入失敗'))
+        .finally(() => setLoading(false));
+    } else if (tab === 'requests') {
+      fetch('/api/admin-dashboard/requests')
+        .then(res => res.json())
+        .then(data => setRequests(data.requests))
+        .catch(() => setError('載入失敗'))
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [tab]);
 
   // 處理新增員工表單提交
   const addEmployee = (e: React.FormEvent) => {
@@ -26,36 +56,38 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div className="nav-tabs">
-          <button className={`nav-tab${tab === 'overview' ? ' active' : ''}`} onClick={() => showTab('overview')}>總覽</button>
-          <button className={`nav-tab${tab === 'employees' ? ' active' : ''}`} onClick={() => showTab('employees')}>員工管理</button>
-          <button className={`nav-tab${tab === 'requests' ? ' active' : ''}`} onClick={() => showTab('requests')}>請假審核</button>
-          <button className={`nav-tab${tab === 'add-employee' ? ' active' : ''}`} onClick={() => showTab('add-employee')}>新增員工</button>
+          <button className={`nav-tab${tab === 'overview' ? ' active' : ''}`} onClick={() => setTab('overview')}>總覽</button>
+          <button className={`nav-tab${tab === 'employees' ? ' active' : ''}`} onClick={() => setTab('employees')}>員工管理</button>
+          <button className={`nav-tab${tab === 'requests' ? ' active' : ''}`} onClick={() => setTab('requests')}>請假審核</button>
+          <button className={`nav-tab${tab === 'add-employee' ? ' active' : ''}`} onClick={() => setTab('add-employee')}>新增員工</button>
         </div>
         <div className="content">
+          {error && <div style={{ color: 'red', marginBottom: 16 }}>{error}</div>}
+          {loading && <div>載入中...</div>}
           {/* 總覽頁面 */}
-          {tab === 'overview' && (
+          {tab === 'overview' && overview && !loading && (
             <div id="overview" className="tab-content">
               <div className="card">
                 <h3>系統統計</h3>
                 <div className="leave-balance">
                   <div className="balance-item">
                     <h4>總員工數</h4>
-                    <div className="amount">2</div>
+                    <div className="amount">{overview.stats.totalEmployees}</div>
                     <div>人</div>
                   </div>
                   <div className="balance-item">
                     <h4>待審核申請</h4>
-                    <div className="amount">2</div>
+                    <div className="amount">{overview.stats.pendingRequests}</div>
                     <div>件</div>
                   </div>
                   <div className="balance-item">
                     <h4>本月請假</h4>
-                    <div className="amount">5</div>
+                    <div className="amount">{overview.stats.leavesThisMonth}</div>
                     <div>次</div>
                   </div>
                   <div className="balance-item">
                     <h4>特休使用率</h4>
-                    <div className="amount">65%</div>
+                    <div className="amount">{overview.stats.annualLeaveUsage}</div>
                     <div>平均</div>
                   </div>
                 </div>
@@ -73,24 +105,14 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
-                        <td>2024-01-25 14:30</td>
-                        <td>張小明</td>
-                        <td>提交請假申請</td>
-                        <td><span className="status pending">待審核</span></td>
-                      </tr>
-                      <tr>
-                        <td>2024-01-25 10:15</td>
-                        <td>李小華</td>
-                        <td>提交請假申請</td>
-                        <td><span className="status pending">待審核</span></td>
-                      </tr>
-                      <tr>
-                        <td>2024-01-24 16:45</td>
-                        <td>張小明</td>
-                        <td>請假申請已核准</td>
-                        <td><span className="status approved">已核准</span></td>
-                      </tr>
+                      {overview.activities.map((a: any, i: number) => (
+                        <tr key={i}>
+                          <td>{a.time}</td>
+                          <td>{a.employee}</td>
+                          <td>{a.action}</td>
+                          <td><span className={`status ${a.status}`}>{a.status === 'pending' ? '待審核' : a.status === 'approved' ? '已核准' : a.status}</span></td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -98,25 +120,73 @@ export default function AdminDashboard() {
             </div>
           )}
           {/* 員工管理頁面 */}
-          {tab === 'employees' && (
+          {tab === 'employees' && !loading && (
             <div id="employees" className="tab-content">
               <div className="card">
                 <h3>員工列表</h3>
                 <div id="employee-list" className="table-container">
-                  {/* 員工列表將由 JavaScript 載入 */}
-                  <span>尚無員工資料</span>
+                  {employees.length === 0 ? <span>尚無員工資料</span> : (
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>姓名</th>
+                          <th>Email</th>
+                          <th>到職日</th>
+                          <th>部門</th>
+                          <th>特休天數</th>
+                          <th>補休天數</th>
+                          <th>備註</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {employees.map((emp, i) => (
+                          <tr key={i}>
+                            <td>{emp.name}</td>
+                            <td>{emp.email}</td>
+                            <td>{emp.hireDate}</td>
+                            <td>{emp.department}</td>
+                            <td>{emp.annualLeave}</td>
+                            <td>{emp.compensatoryLeave}</td>
+                            <td>{emp.notes}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
             </div>
           )}
           {/* 請假審核頁面 */}
-          {tab === 'requests' && (
+          {tab === 'requests' && !loading && (
             <div id="requests" className="tab-content">
               <div className="card">
                 <h3>待審核請假申請</h3>
                 <div id="pending-requests" className="table-container">
-                  {/* 待審核申請將由 JavaScript 載入 */}
-                  <span>尚無待審核申請</span>
+                  {requests.length === 0 ? <span>尚無待審核申請</span> : (
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>員工</th>
+                          <th>日期</th>
+                          <th>假別</th>
+                          <th>天數</th>
+                          <th>狀態</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {requests.map((req, i) => (
+                          <tr key={i}>
+                            <td>{req.employee}</td>
+                            <td>{req.date}</td>
+                            <td>{req.type}</td>
+                            <td>{req.days}</td>
+                            <td><span className={`status ${req.status}`}>{req.status === 'pending' ? '待審核' : req.status}</span></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
             </div>

@@ -2,14 +2,56 @@
 
 import React, { useState, useEffect } from "react";
 
+type OverviewResponse = {
+  balance: { annual: number; sick: number };
+  profile: { name: string; email: string; hireDate: string };
+};
+
+type HistoryItem = {
+  date: string;
+  type: string;
+  period: string;
+  days: number;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected' | string;
+};
+
+type LeaveForm = {
+  date: string;
+  period: string;
+  type: string;
+  days: string;
+  reason: string;
+};
+
 export default function EmployeeDashboard() {
   const [tab, setTab] = useState('overview');
-  const [overview, setOverview] = useState<any>(null);
-  const [history, setHistory] = useState<any[]>([]);
+  const [overview, setOverview] = useState<OverviewResponse | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [userName, setUserName] = useState('員工');
+
+  // 載入使用者資訊
+  useEffect(() => {
+    const storedUserName = localStorage.getItem('userName');
+    if (storedUserName) {
+      setUserName(storedUserName);
+    }
+  }, []);
+
+  // 登出功能
+  const handleLogout = () => {
+    // 清除本地儲存的登入資訊
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
+    
+    // 重導向到首頁
+    window.location.href = '/';
+  };
   // 請假申請表單
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<LeaveForm>({
     date: '',
     period: '',
     type: '',
@@ -25,13 +67,13 @@ export default function EmployeeDashboard() {
     if (tab === 'overview') {
       fetch('/api/employee-dashboard/overview')
         .then(res => res.json())
-        .then(data => setOverview(data))
+        .then((data: OverviewResponse) => setOverview(data))
         .catch(() => setError('載入失敗'))
         .finally(() => setLoading(false));
     } else if (tab === 'history') {
       fetch('/api/employee-dashboard/leave-history')
         .then(res => res.json())
-        .then(data => setHistory(data.history))
+        .then((data: { history: HistoryItem[] }) => setHistory(data.history))
         .catch(() => setError('載入失敗'))
         .finally(() => setLoading(false));
     } else {
@@ -50,7 +92,7 @@ export default function EmployeeDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
       });
-      const data = await res.json();
+      const data: { success: boolean } = await res.json();
       if (data.success) {
         setSubmitMsg('申請成功！');
         setForm({ date: '', period: '', type: '', days: '', reason: '' });
@@ -70,8 +112,8 @@ export default function EmployeeDashboard() {
         <div className="header">
           <h1>員工儀表板</h1>
           <div className="user-info">
-            <span>歡迎，<span id="user-name">員工</span></span>
-            <button className="logout-btn">登出</button>
+            <span>歡迎，<span id="user-name">{userName}</span></span>
+            <button className="logout-btn" onClick={handleLogout}>登出</button>
           </div>
         </div>
         <div className="nav-tabs">
@@ -183,7 +225,7 @@ export default function EmployeeDashboard() {
                         </tr>
                       </thead>
                       <tbody>
-                        {history.map((h, i) => (
+                        {history.map((h: HistoryItem, i) => (
                           <tr key={i}>
                             <td>{h.date}</td>
                             <td>{h.type}</td>

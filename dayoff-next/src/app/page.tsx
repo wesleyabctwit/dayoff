@@ -32,6 +32,10 @@ export default function Home() {
       });
       const data = await res.json();
       if (data.success && data.role === 'employee') {
+        // 儲存登入資訊到 localStorage
+        localStorage.setItem('userRole', data.role);
+        localStorage.setItem('userName', data.name || '員工');
+        localStorage.setItem('userEmail', employeeEmail);
         router.push('/employee-dashboard');
       } else {
         setError(data.message || '登入失敗');
@@ -56,6 +60,10 @@ export default function Home() {
       });
       const data = await res.json();
       if (data.success && data.role === 'admin') {
+        // 儲存登入資訊到 localStorage
+        localStorage.setItem('userRole', data.role);
+        localStorage.setItem('userName', data.name || '管理員');
+        localStorage.setItem('userEmail', adminEmail);
         router.push('/admin-dashboard');
       } else {
         setError(data.message || '登入失敗');

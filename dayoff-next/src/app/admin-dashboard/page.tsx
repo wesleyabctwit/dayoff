@@ -2,14 +2,71 @@
 
 import React, { useState, useEffect } from "react";
 
+type OverviewStats = {
+  totalEmployees: number;
+  pendingRequests: number;
+  leavesThisMonth: number;
+  annualLeaveUsage: string;
+};
+
+type OverviewActivity = {
+  time: string;
+  employee: string;
+  action: string;
+  status: 'pending' | 'approved' | 'rejected' | string;
+};
+
+type OverviewResponse = {
+  stats: OverviewStats;
+  activities: OverviewActivity[];
+};
+
+type EmployeeItem = {
+  name: string;
+  email: string;
+  hireDate: string;
+  department: string;
+  annualLeave: number;
+  compensatoryLeave: number;
+  notes: string;
+};
+
+type RequestItem = {
+  employee: string;
+  date: string;
+  type: string;
+  days: number;
+  status: 'pending' | 'approved' | 'rejected' | string;
+};
+
 export default function AdminDashboard() {
   const [tab, setTab] = useState('overview');
   // 狀態
-  const [overview, setOverview] = useState<any>(null);
-  const [employees, setEmployees] = useState<any[]>([]);
-  const [requests, setRequests] = useState<any[]>([]);
+  const [overview, setOverview] = useState<OverviewResponse | null>(null);
+  const [employees, setEmployees] = useState<EmployeeItem[]>([]);
+  const [requests, setRequests] = useState<RequestItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [userName, setUserName] = useState('管理員');
+
+  // 載入使用者資訊
+  useEffect(() => {
+    const storedUserName = localStorage.getItem('userName');
+    if (storedUserName) {
+      setUserName(storedUserName);
+    }
+  }, []);
+
+  // 登出功能
+  const handleLogout = () => {
+    // 清除本地儲存的登入資訊
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
+    
+    // 重導向到首頁
+    window.location.href = '/';
+  };
 
   // 依分頁載入資料
   useEffect(() => {
@@ -17,21 +74,34 @@ export default function AdminDashboard() {
     setLoading(true);
     if (tab === 'overview') {
       fetch('/api/admin-dashboard/overview')
-        .then(res => res.json())
-        .then(data => setOverview(data))
-        .catch(() => setError('載入失敗'))
+        .then(res => {
+          if (!res.ok) throw new Error('載入失敗');
+          return res.json();
+        })
+        .then((data: unknown) => {
+          const ok = typeof data === 'object' && data !== null && 'stats' in (data as any);
+          if (!ok) throw new Error('資料格式錯誤');
+          setOverview(data as OverviewResponse);
+        })
+        .catch(() => { setOverview(null); setError('載入失敗'); })
         .finally(() => setLoading(false));
     } else if (tab === 'employees') {
       fetch('/api/admin-dashboard/employees')
-        .then(res => res.json())
-        .then(data => setEmployees(data.employees))
-        .catch(() => setError('載入失敗'))
+        .then(res => {
+          if (!res.ok) throw new Error('載入失敗');
+          return res.json();
+        })
+        .then((data: { employees: EmployeeItem[] }) => setEmployees(Array.isArray(data?.employees) ? data.employees : []))
+        .catch(() => { setEmployees([]); setError('載入失敗'); })
         .finally(() => setLoading(false));
     } else if (tab === 'requests') {
       fetch('/api/admin-dashboard/requests')
-        .then(res => res.json())
-        .then(data => setRequests(data.requests))
-        .catch(() => setError('載入失敗'))
+        .then(res => {
+          if (!res.ok) throw new Error('載入失敗');
+          return res.json();
+        })
+        .then((data: { requests: RequestItem[] }) => setRequests(Array.isArray(data?.requests) ? data.requests : []))
+        .catch(() => { setRequests([]); setError('載入失敗'); })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -39,10 +109,47 @@ export default function AdminDashboard() {
   }, [tab]);
 
   // 處理新增員工表單提交
-  const addEmployee = (e: React.FormEvent) => {
+  const addEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('已新增員工（範例）');
-    (e.target as HTMLFormElement).reset();
+    setLoading(true);
+    setError('');
+    
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const data = {
+      name: formData.get('name') as string,
+      email: formData.get('email') as string,
+      hireDate: formData.get('hireDate') as string,
+      department: formData.get('department') as string,
+      annualLeave: Number(formData.get('annualLeave')),
+      compensatoryLeave: Number(formData.get('compensatoryLeave')),
+      notes: formData.get('notes') as string || '',
+    };
+
+    try {
+      const res = await fetch('/api/admin-dashboard/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await res.json();
+      if (result.success) {
+        alert('員工新增成功！');
+        form.reset();
+        // 如果目前在員工管理分頁，重新載入資料
+        if (tab === 'employees') {
+          setTab('overview'); // 先切換
+          setTimeout(() => setTab('employees'), 100); // 再切回來觸發重新載入
+        }
+      } else {
+        setError(result.message || '新增失敗');
+      }
+    } catch {
+      setError('伺服器錯誤');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,8 +158,8 @@ export default function AdminDashboard() {
         <div className="header">
           <h1>管理員儀表板</h1>
           <div className="user-info">
-            <span>歡迎，<span id="user-name">管理員</span></span>
-            <button className="logout-btn">登出</button>
+            <span>歡迎，<span id="user-name">{userName}</span></span>
+            <button className="logout-btn" onClick={handleLogout}>登出</button>
           </div>
         </div>
         <div className="nav-tabs">
@@ -65,7 +172,7 @@ export default function AdminDashboard() {
           {error && <div style={{ color: 'red', marginBottom: 16 }}>{error}</div>}
           {loading && <div>載入中...</div>}
           {/* 總覽頁面 */}
-          {tab === 'overview' && overview && !loading && (
+          {tab === 'overview' && !!overview?.stats && !loading && (
             <div id="overview" className="tab-content">
               <div className="card">
                 <h3>系統統計</h3>
@@ -105,7 +212,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {overview.activities.map((a: any, i: number) => (
+                      {overview.activities.map((a: OverviewActivity, i: number) => (
                         <tr key={i}>
                           <td>{a.time}</td>
                           <td>{a.employee}</td>
@@ -139,7 +246,7 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody>
-                        {employees.map((emp, i) => (
+                        {employees.map((emp: EmployeeItem, i) => (
                           <tr key={i}>
                             <td>{emp.name}</td>
                             <td>{emp.email}</td>
@@ -175,7 +282,7 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody>
-                        {requests.map((req, i) => (
+                        {requests.map((req: RequestItem, i) => (
                           <tr key={i}>
                             <td>{req.employee}</td>
                             <td>{req.date}</td>
@@ -226,11 +333,11 @@ export default function AdminDashboard() {
                   <div className="form-row">
                     <div className="form-group">
                       <label htmlFor="new-employee-annual-leave">特休天數</label>
-                      <input type="number" id="new-employee-annual-leave" name="annualLeave" min="0" max="30" defaultValue={14} required />
+                      <input type="number" id="new-employee-annual-leave" name="annualLeave" min={0} max={30} defaultValue={14} required />
                     </div>
                     <div className="form-group">
                       <label htmlFor="new-employee-compensatory-leave">補休天數</label>
-                      <input type="number" id="new-employee-compensatory-leave" name="compensatoryLeave" min="0" max="30" defaultValue={0} required />
+                      <input type="number" id="new-employee-compensatory-leave" name="compensatoryLeave" min={0} max={30} defaultValue={0} required />
                     </div>
                   </div>
                   <div className="form-group">

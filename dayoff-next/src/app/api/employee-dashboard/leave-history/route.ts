@@ -1,10 +1,28 @@
 import { NextResponse } from 'next/server';
+import { getFirstEmployee, readLeaveHistoryByEmail, upsertDemoDataIfEmpty, LeaveRequestRow } from '@/lib/sheets';
 
-export async function GET() {
-  return NextResponse.json({
-    history: [
-      { date: '2024-01-10', type: '特休', period: '全天', days: 1, reason: '家中有事', status: 'approved' },
-      { date: '2024-01-20', type: '病假', period: '上午', days: 0.5, reason: '感冒', status: 'pending' }
-    ]
-  });
+export async function GET(request: Request) {
+  try {
+    await upsertDemoDataIfEmpty();
+    const url = new URL(request.url);
+    let email = url.searchParams.get('email') || '';
+    if (!email) {
+      const first = await getFirstEmployee();
+      if (!first) return NextResponse.json({ history: [] });
+      email = first.email;
+    }
+    const history = await readLeaveHistoryByEmail(email);
+    const mapped = history.map((h: LeaveRequestRow) => ({
+      date: h.date,
+      type: h.type,
+      period: h.period,
+      days: Number(h.days || '0'),
+      reason: h.reason,
+      status: h.status,
+    }));
+    return NextResponse.json({ history: mapped });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Server Error';
+    return NextResponse.json({ message }, { status: 500 });
+  }
 } 

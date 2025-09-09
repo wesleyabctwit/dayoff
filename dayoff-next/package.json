@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "init-sheets": "node scripts/init-sheets.js"
   },
   "dependencies": {
     "google-auth-library": "^10.2.1",

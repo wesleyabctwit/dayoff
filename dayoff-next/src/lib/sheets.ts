@@ -9,6 +9,7 @@ export type EmployeeRow = {
   id: string;
   name: string;
   email: string;
+  password: string; // 新增密碼欄位
   hireDate: string;
   department?: string;
   annualLeave?: string; // 特休剩餘天數
@@ -34,6 +35,7 @@ const EMPLOYEES_HEADERS: Array<keyof EmployeeRow> = [
   'id',
   'name',
   'email',
+  'password', // 新增密碼欄位
   'hireDate',
   'department',
   'annualLeave',
@@ -113,6 +115,7 @@ export async function readEmployees(): Promise<EmployeeRow[]> {
     id: safeGet(r, 'id'),
     name: safeGet(r, 'name'),
     email: safeGet(r, 'email'),
+    password: safeGet(r, 'password'), // 新增密碼欄位
     hireDate: safeGet(r, 'hireDate'),
     department: safeGet(r, 'department'),
     annualLeave: safeGet(r, 'annualLeave'),
@@ -218,6 +221,7 @@ export async function addEmployee(partial: Omit<EmployeeRow, 'id'>): Promise<Emp
     id: String(newId),
     name: partial.name,
     email: partial.email,
+    password: partial.password, // 新增密碼欄位
     hireDate: partial.hireDate,
     department: partial.department,
     annualLeave: partial.annualLeave,
@@ -239,6 +243,7 @@ export async function upsertDemoDataIfEmpty(): Promise<void> {
         id: '1',
         name: '張小明',
         email: 'ming@company.com',
+        password: '123456', // 新增密碼
         hireDate: '2023-01-15',
         department: '技術部',
         annualLeave: '14',
@@ -250,6 +255,7 @@ export async function upsertDemoDataIfEmpty(): Promise<void> {
         id: '2',
         name: '李小華',
         email: 'hua@company.com',
+        password: '123456', // 新增密碼
         hireDate: '2022-08-01',
         department: '行銷部',
         annualLeave: '10',

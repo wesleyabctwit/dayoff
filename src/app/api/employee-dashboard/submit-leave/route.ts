@@ -1,36 +1,50 @@
-import { NextResponse } from 'next/server';
-import { addLeaveRequest, getFirstEmployee, upsertDemoDataIfEmpty } from '@/lib/sheets';
+import { NextResponse } from "next/server";
+import {
+  addLeaveRequest,
+  findEmployeeByEmail,
+  upsertDemoDataIfEmpty,
+} from "@/lib/sheets";
+import { sendLeaveRequestEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
     await upsertDemoDataIfEmpty();
     const url = new URL(request.url);
-    let email = url.searchParams.get('email') || '';
-    if (!email) {
-      const first = await getFirstEmployee();
-      if (!first) return NextResponse.json({ success: false, message: 'No employee' }, { status: 400 });
-      email = first.email;
+    const email = url.searchParams.get("email") || "";
+
+    const employee = await findEmployeeByEmail(email);
+    if (!employee) {
+      return NextResponse.json(
+        { success: false, message: "找不到該員工" },
+        { status: 404 }
+      );
     }
 
     const { date, period, type, days, reason } = await request.json();
 
     if (!date || !period || !type || !days || !reason) {
-      return NextResponse.json({ success: false, message: '缺少必要欄位' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: "缺少必要欄位" },
+        { status: 400 }
+      );
     }
 
-    await addLeaveRequest({
+    const newRequest = await addLeaveRequest({
       employee_email: email,
       date,
       period,
       type,
       days: String(days),
       reason,
-      status: 'pending',
+      status: "pending",
     });
+
+    // 寄送郵件通知
+    await sendLeaveRequestEmail(newRequest, employee);
 
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Server Error';
+    const message = err instanceof Error ? err.message : "Server Error";
     return NextResponse.json({ success: false, message }, { status: 500 });
   }
-} 
+}

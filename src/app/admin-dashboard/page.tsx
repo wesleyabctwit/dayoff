@@ -38,6 +38,9 @@ type RequestItem = {
   type: string;
   days: number;
   status: "pending" | "approved" | "rejected" | string;
+  id: number;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export default function AdminDashboard() {
@@ -96,8 +99,8 @@ export default function AdminDashboard() {
           if (!res.ok) throw new Error("載入失敗");
           return res.json();
         })
-        .then((data: { employees: EmployeeItem[] }) =>
-          setEmployees(Array.isArray(data?.employees) ? data.employees : [])
+        .then((data: EmployeeItem[]) =>
+          setEmployees(Array.isArray(data) ? data : [])
         )
         .catch(() => {
           setEmployees([]);
@@ -165,6 +168,54 @@ export default function AdminDashboard() {
       setError("伺服器錯誤");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 處理請假狀態變更
+  const handleStatusChange = async (id: number, newStatus: string) => {
+    const originalRequests = [...requests];
+    const updatedRequests = requests.map((req) =>
+      req.id === id ? { ...req, status: newStatus } : req
+    );
+    setRequests(updatedRequests);
+
+    try {
+      const res = await fetch("/api/admin-dashboard/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
+
+      if (!res.ok) {
+        throw new Error("更新失敗");
+      }
+
+      const result = await res.json();
+      if (!result.success) {
+        throw new Error(result.message || "更新失敗");
+      }
+    } catch (error) {
+      setRequests(originalRequests);
+      const message =
+        error instanceof Error ? error.message : "更新時發生伺服器錯誤";
+      setError(message);
+      alert(`錯誤：${message}`);
+    }
+  };
+
+  // 格式化日期時間
+  const formatDateTime = (isoString?: string) => {
+    if (!isoString) return "N/A";
+    try {
+      return new Date(isoString).toLocaleString("zh-TW", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (e) {
+      return "Invalid Date";
     }
   };
 
@@ -342,6 +393,8 @@ export default function AdminDashboard() {
                           <th>日期</th>
                           <th>假別</th>
                           <th>天數</th>
+                          <th>申請時間</th>
+                          <th>審核時間</th>
                           <th>狀態</th>
                         </tr>
                       </thead>
@@ -352,12 +405,20 @@ export default function AdminDashboard() {
                             <td>{req.date}</td>
                             <td>{req.type}</td>
                             <td>{req.days}</td>
+                            <td>{formatDateTime(req.createdAt)}</td>
+                            <td>{formatDateTime(req.updatedAt)}</td>
                             <td>
-                              <span className={`status ${req.status}`}>
-                                {req.status === "pending"
-                                  ? "待審核"
-                                  : req.status}
-                              </span>
+                              <select
+                                value={req.status}
+                                onChange={(e) =>
+                                  handleStatusChange(req.id, e.target.value)
+                                }
+                                className={`status-select status-${req.status}`}
+                              >
+                                <option value="pending">待審核</option>
+                                <option value="approved">已核准</option>
+                                <option value="rejected">已拒絕</option>
+                              </select>
                             </td>
                           </tr>
                         ))}
@@ -466,12 +527,12 @@ export default function AdminDashboard() {
                       placeholder="其他備註事項..."
                     ></textarea>
                   </div>
-                  <div className="form-group">
-                    <button type="submit" className="btn btn-success">
-                      新增員工
-                    </button>
+                  <div className="form-actions">
                     <button type="reset" className="btn btn-secondary">
                       重置
+                    </button>
+                    <button type="submit" className="btn btn-success">
+                      新增員工
                     </button>
                   </div>
                 </form>
@@ -480,6 +541,68 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
+      <style jsx>{`
+        .form-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 1rem;
+          margin-top: 1.5rem;
+        }
+        .btn {
+          padding: 0.75rem 1.5rem;
+          border-radius: 8px;
+          font-size: 1rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background-color 0.3s ease, transform 0.2s ease;
+          border: none;
+        }
+        .btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .btn-success {
+          background-color: #667eea;
+          color: white;
+        }
+        .btn-success:hover {
+          background-color: #5a6fd8;
+        }
+        .btn-secondary {
+          background-color: #f8f9fa;
+          color: #333;
+          border: 1px solid #dee2e6;
+        }
+        .btn-secondary:hover {
+          background-color: #e9ecef;
+        }
+        /* 移除 form-group 的間距，因為 form-actions 已經有 margin-top */
+        .form-actions.form-group {
+          margin-bottom: 0;
+        }
+        .status-select {
+          padding: 5px 10px;
+          border-radius: 5px;
+          border: 1px solid #ccc;
+          background-color: #fff;
+          cursor: pointer;
+        }
+        .status-select.status-pending {
+          border-color: #ffc107;
+          background-color: #fff3cd;
+          color: #856404;
+        }
+        .status-select.status-approved {
+          border-color: #28a745;
+          background-color: #d4edda;
+          color: #155724;
+        }
+        .status-select.status-rejected {
+          border-color: #dc3545;
+          background-color: #f8d7da;
+          color: #721c24;
+        }
+      `}</style>
     </div>
   );
 }

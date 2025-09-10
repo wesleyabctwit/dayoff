@@ -10,7 +10,14 @@ export async function POST(request: Request) {
   try {
     await upsertDemoDataIfEmpty();
     const url = new URL(request.url);
-    const email = url.searchParams.get("email") || "";
+    const email = url.searchParams.get("email");
+
+    if (!email) {
+      return NextResponse.json(
+        { success: false, message: "Email parameter is required" },
+        { status: 400 }
+      );
+    }
 
     const employee = await findEmployeeByEmail(email);
     if (!employee) {

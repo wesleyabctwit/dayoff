@@ -43,15 +43,31 @@ type RequestItem = {
   updatedAt?: string;
 };
 
+type PaginationInfo = {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+};
+
 export default function AdminDashboard() {
   const [tab, setTab] = useState("overview");
   // 狀態
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
   const [employees, setEmployees] = useState<EmployeeItem[]>([]);
   const [requests, setRequests] = useState<RequestItem[]>([]);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [userName, setUserName] = useState("管理員");
+
+  // 分頁和篩選狀態
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedYear, setSelectedYear] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
 
   // 載入使用者資訊
   useEffect(() => {
@@ -108,23 +124,36 @@ export default function AdminDashboard() {
         })
         .finally(() => setLoading(false));
     } else if (tab === "requests") {
-      fetch("/api/admin-dashboard/requests")
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: "10",
+      });
+
+      if (selectedYear) params.append("year", selectedYear);
+      if (selectedMonth) params.append("month", selectedMonth);
+      if (selectedStatus) params.append("status", selectedStatus);
+
+      fetch(`/api/admin-dashboard/requests?${params.toString()}`)
         .then((res) => {
           if (!res.ok) throw new Error("載入失敗");
           return res.json();
         })
-        .then((data: { requests: RequestItem[] }) =>
-          setRequests(Array.isArray(data?.requests) ? data.requests : [])
+        .then(
+          (data: { requests: RequestItem[]; pagination: PaginationInfo }) => {
+            setRequests(Array.isArray(data?.requests) ? data.requests : []);
+            setPagination(data.pagination || null);
+          }
         )
         .catch(() => {
           setRequests([]);
+          setPagination(null);
           setError("載入失敗");
         })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
-  }, [tab]);
+  }, [tab, currentPage, selectedYear, selectedMonth, selectedStatus]);
 
   // 處理新增員工表單提交
   const addEmployee = async (e: React.FormEvent) => {
@@ -201,6 +230,31 @@ export default function AdminDashboard() {
       setError(message);
       alert(`錯誤：${message}`);
     }
+  };
+
+  // 處理篩選條件變更
+  const handleFilterChange = (type: string, value: string) => {
+    setCurrentPage(1); // 重置到第一頁
+    if (type === "year") {
+      setSelectedYear(value);
+    } else if (type === "month") {
+      setSelectedMonth(value);
+    } else if (type === "status") {
+      setSelectedStatus(value);
+    }
+  };
+
+  // 處理分頁變更
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // 清除篩選條件
+  const clearFilters = () => {
+    setSelectedYear("");
+    setSelectedMonth("");
+    setSelectedStatus("");
+    setCurrentPage(1);
   };
 
   // 格式化日期時間
@@ -381,10 +435,74 @@ export default function AdminDashboard() {
           {tab === "requests" && !loading && (
             <div id="requests" className="tab-content">
               <div className="card">
-                <h3>待審核請假申請</h3>
+                <h3>請假申請管理</h3>
+
+                {/* 篩選控制項 */}
+                <div className="filter-controls">
+                  <div className="filter-group">
+                    <label htmlFor="year-filter">年份：</label>
+                    <select
+                      id="year-filter"
+                      value={selectedYear}
+                      onChange={(e) =>
+                        handleFilterChange("year", e.target.value)
+                      }
+                    >
+                      <option value="">全部年份</option>
+                      <option value="2024">2024</option>
+                      <option value="2025">2025</option>
+                    </select>
+                  </div>
+
+                  <div className="filter-group">
+                    <label htmlFor="month-filter">月份：</label>
+                    <select
+                      id="month-filter"
+                      value={selectedMonth}
+                      onChange={(e) =>
+                        handleFilterChange("month", e.target.value)
+                      }
+                    >
+                      <option value="">全部月份</option>
+                      {Array.from({ length: 12 }, (_, i) => {
+                        const month = (i + 1).toString().padStart(2, "0");
+                        return (
+                          <option key={month} value={month}>
+                            {month}月
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  <div className="filter-group">
+                    <label htmlFor="status-filter">狀態：</label>
+                    <select
+                      id="status-filter"
+                      value={selectedStatus}
+                      onChange={(e) =>
+                        handleFilterChange("status", e.target.value)
+                      }
+                    >
+                      <option value="">全部狀態</option>
+                      <option value="pending">待審核</option>
+                      <option value="approved">已核准</option>
+                      <option value="rejected">已拒絕</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={clearFilters}
+                  >
+                    清除篩選
+                  </button>
+                </div>
+
                 <div id="pending-requests" className="table-container">
                   {requests.length === 0 ? (
-                    <span>尚無待審核申請</span>
+                    <span>尚無符合條件的申請</span>
                   ) : (
                     <table>
                       <thead>
@@ -426,6 +544,63 @@ export default function AdminDashboard() {
                     </table>
                   )}
                 </div>
+
+                {/* 分頁控制項 */}
+                {pagination && pagination.totalPages > 1 && (
+                  <div className="pagination-controls">
+                    <div className="pagination-info">
+                      顯示第{" "}
+                      {(pagination.currentPage - 1) * pagination.itemsPerPage +
+                        1}{" "}
+                      -{" "}
+                      {Math.min(
+                        pagination.currentPage * pagination.itemsPerPage,
+                        pagination.totalItems
+                      )}{" "}
+                      筆，共 {pagination.totalItems} 筆
+                    </div>
+                    <div className="pagination-buttons">
+                      <button
+                        className="btn btn-secondary"
+                        disabled={!pagination.hasPrevPage}
+                        onClick={() =>
+                          handlePageChange(pagination.currentPage - 1)
+                        }
+                      >
+                        上一頁
+                      </button>
+
+                      <div className="page-numbers">
+                        {Array.from(
+                          { length: pagination.totalPages },
+                          (_, i) => i + 1
+                        ).map((page) => (
+                          <button
+                            key={page}
+                            className={`btn ${
+                              page === pagination.currentPage
+                                ? "btn-primary"
+                                : "btn-secondary"
+                            }`}
+                            onClick={() => handlePageChange(page)}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        className="btn btn-secondary"
+                        disabled={!pagination.hasNextPage}
+                        onClick={() =>
+                          handlePageChange(pagination.currentPage + 1)
+                        }
+                      >
+                        下一頁
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -601,6 +776,69 @@ export default function AdminDashboard() {
           border-color: #dc3545;
           background-color: #f8d7da;
           color: #721c24;
+        }
+        .filter-controls {
+          display: flex;
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+          padding: 1rem;
+          background-color: #f8f9fa;
+          border-radius: 8px;
+          flex-wrap: wrap;
+          align-items: end;
+        }
+        .filter-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        .filter-group label {
+          font-weight: 500;
+          color: #333;
+          font-size: 0.9rem;
+        }
+        .filter-group select {
+          padding: 0.5rem;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          background-color: white;
+          min-width: 120px;
+        }
+        .pagination-controls {
+          margin-top: 1.5rem;
+          padding: 1rem;
+          border-top: 1px solid #eee;
+        }
+        .pagination-info {
+          text-align: center;
+          color: #666;
+          margin-bottom: 1rem;
+          font-size: 0.9rem;
+        }
+        .pagination-buttons {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .page-numbers {
+          display: flex;
+          gap: 0.25rem;
+        }
+        .page-numbers .btn {
+          min-width: 40px;
+          padding: 0.5rem;
+        }
+        .btn-primary {
+          background-color: #667eea;
+          color: white;
+        }
+        .btn-primary:hover {
+          background-color: #5a6fd8;
+        }
+        .btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
       `}</style>
     </div>

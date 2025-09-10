@@ -10,9 +10,17 @@ import {
 } from "@/lib/sheets";
 import { sendLeaveStatusUpdateEmail } from "@/lib/email";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await upsertDemoDataIfEmpty();
+
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
+    const year = url.searchParams.get("year");
+    const month = url.searchParams.get("month");
+    const status = url.searchParams.get("status");
+
     const [requests, employees] = await Promise.all([
       readLeaveRequests(),
       readEmployees(),
@@ -21,7 +29,7 @@ export async function GET() {
       employees.map((e: EmployeeRow) => [e.email, e.name] as const)
     );
 
-    const mapped = requests.map((r: LeaveRequestRow) => ({
+    let filteredRequests = requests.map((r: LeaveRequestRow) => ({
       id: Number(r.id || "0"),
       employee: emailToName.get(r.employee_email) || r.employee_email,
       date: r.date,
@@ -32,7 +40,43 @@ export async function GET() {
       updatedAt: r.updated_at,
     }));
 
-    return NextResponse.json({ requests: mapped });
+    // 年月份篩選
+    if (year && month) {
+      const targetDate = `${year}-${month.padStart(2, "0")}`;
+      filteredRequests = filteredRequests.filter((req) =>
+        req.date.startsWith(targetDate)
+      );
+    } else if (year) {
+      filteredRequests = filteredRequests.filter((req) =>
+        req.date.startsWith(year)
+      );
+    }
+
+    // 狀態篩選
+    if (status) {
+      filteredRequests = filteredRequests.filter(
+        (req) => req.status === status
+      );
+    }
+
+    // 分頁計算
+    const total = filteredRequests.length;
+    const totalPages = Math.ceil(total / limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedRequests = filteredRequests.slice(startIndex, endIndex);
+
+    return NextResponse.json({
+      requests: paginatedRequests,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: total,
+        itemsPerPage: limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Server Error";
     return NextResponse.json({ message }, { status: 500 });

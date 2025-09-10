@@ -124,6 +124,9 @@ async function getLeaveRequestsSheet(): Promise<GoogleSpreadsheetWorksheet> {
 export async function readEmployees(): Promise<EmployeeRow[]> {
   const sheet = await getEmployeesSheet();
 
+  // 載入表頭
+  await sheet.loadHeaderRow();
+
   // 確保表頭存在
   if (!sheet.headerValues || sheet.headerValues.length === 0) {
     await sheet.setHeaderRow(EMPLOYEES_HEADERS as string[]);
@@ -174,6 +177,9 @@ async function getNextId(sheet: GoogleSpreadsheetWorksheet): Promise<number> {
 
 export async function readLeaveRequests(): Promise<LeaveRequestRow[]> {
   const sheet = await getLeaveRequestsSheet();
+
+  // 載入表頭
+  await sheet.loadHeaderRow();
 
   // 確保表頭存在
   if (!sheet.headerValues || sheet.headerValues.length === 0) {

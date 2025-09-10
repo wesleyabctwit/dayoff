@@ -1,10 +1,52 @@
 import { NextResponse } from "next/server";
 import { addEmployee } from "@/lib/sheets";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const { readEmployees } = await import("@/lib/sheets");
+    const url = new URL(request.url);
+    const sortField = url.searchParams.get("sortField");
+    const sortDirection = url.searchParams.get("sortDirection") as
+      | "asc"
+      | "desc"
+      | null;
+
     const employees = await readEmployees();
+
+    // 排序
+    if (sortField && sortDirection) {
+      employees.sort((a, b) => {
+        let aValue: string | number = a[sortField as keyof typeof a] as
+          | string
+          | number;
+        let bValue: string | number = b[sortField as keyof typeof b] as
+          | string
+          | number;
+
+        // 處理日期字串
+        if (sortField === "hireDate") {
+          aValue = new Date(aValue || 0).getTime();
+          bValue = new Date(bValue || 0).getTime();
+        }
+
+        // 處理數字
+        if (sortField === "annualLeave" || sortField === "compensatoryLeave") {
+          aValue = Number(aValue) || 0;
+          bValue = Number(bValue) || 0;
+        }
+
+        // 處理字串
+        if (typeof aValue === "string") {
+          aValue = aValue.toLowerCase();
+          bValue = (bValue as string).toLowerCase();
+        }
+
+        if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
     return NextResponse.json(employees);
   } catch (error) {
     console.error("讀取員工資料錯誤:", error);

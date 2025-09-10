@@ -69,6 +69,10 @@ export default function AdminDashboard() {
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
 
+  // 排序狀態
+  const [sortField, setSortField] = useState("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
   // 載入使用者資訊
   useEffect(() => {
     const storedUserName = localStorage.getItem("userName");
@@ -110,7 +114,13 @@ export default function AdminDashboard() {
         })
         .finally(() => setLoading(false));
     } else if (tab === "employees") {
-      fetch("/api/admin-dashboard/employees")
+      const params = new URLSearchParams();
+      if (sortField) {
+        params.append("sortField", sortField);
+        params.append("sortDirection", sortDirection);
+      }
+
+      fetch(`/api/admin-dashboard/employees?${params.toString()}`)
         .then((res) => {
           if (!res.ok) throw new Error("載入失敗");
           return res.json();
@@ -132,6 +142,10 @@ export default function AdminDashboard() {
       if (selectedYear) params.append("year", selectedYear);
       if (selectedMonth) params.append("month", selectedMonth);
       if (selectedStatus) params.append("status", selectedStatus);
+      if (sortField) {
+        params.append("sortField", sortField);
+        params.append("sortDirection", sortDirection);
+      }
 
       fetch(`/api/admin-dashboard/requests?${params.toString()}`)
         .then((res) => {
@@ -153,7 +167,15 @@ export default function AdminDashboard() {
     } else {
       setLoading(false);
     }
-  }, [tab, currentPage, selectedYear, selectedMonth, selectedStatus]);
+  }, [
+    tab,
+    currentPage,
+    selectedYear,
+    selectedMonth,
+    selectedStatus,
+    sortField,
+    sortDirection,
+  ]);
 
   // 處理新增員工表單提交
   const addEmployee = async (e: React.FormEvent) => {
@@ -257,6 +279,54 @@ export default function AdminDashboard() {
     setCurrentPage(1);
   };
 
+  // 處理排序
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+    setCurrentPage(1); // 重置到第一頁
+  };
+
+  // 取得排序圖示
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) return "↕️";
+    return sortDirection === "asc" ? "↑" : "↓";
+  };
+
+  // 處理編輯員工
+  const handleEditEmployee = (employee: EmployeeItem) => {
+    // 設定編輯模式並填入員工資料
+    setTab("add-employee");
+    // 這裡可以設定表單的預設值
+    setTimeout(() => {
+      const form = document.querySelector(
+        "#add-employee form"
+      ) as HTMLFormElement;
+      if (form) {
+        (form.querySelector('[name="name"]') as HTMLInputElement).value =
+          employee.name;
+        (form.querySelector('[name="email"]') as HTMLInputElement).value =
+          employee.email;
+        (form.querySelector('[name="password"]') as HTMLInputElement).value =
+          employee.password;
+        (form.querySelector('[name="hireDate"]') as HTMLInputElement).value =
+          employee.hireDate;
+        (form.querySelector('[name="department"]') as HTMLSelectElement).value =
+          employee.department;
+        (form.querySelector('[name="annualLeave"]') as HTMLInputElement).value =
+          employee.annualLeave.toString();
+        (
+          form.querySelector('[name="compensatoryLeave"]') as HTMLInputElement
+        ).value = employee.compensatoryLeave.toString();
+        (form.querySelector('[name="notes"]') as HTMLTextAreaElement).value =
+          employee.notes;
+      }
+    }, 100);
+  };
+
   // 格式化日期時間
   const formatDateTime = (isoString?: string) => {
     if (!isoString) return "N/A";
@@ -268,7 +338,7 @@ export default function AdminDashboard() {
         hour: "2-digit",
         minute: "2-digit",
       });
-    } catch (e) {
+    } catch {
       return "Invalid Date";
     }
   };
@@ -305,12 +375,6 @@ export default function AdminDashboard() {
             onClick={() => setTab("requests")}
           >
             請假審核
-          </button>
-          <button
-            className={`nav-tab${tab === "add-employee" ? " active" : ""}`}
-            onClick={() => setTab("add-employee")}
-          >
-            新增員工
           </button>
         </div>
         <div className="content">
@@ -395,7 +459,15 @@ export default function AdminDashboard() {
           {tab === "employees" && !loading && (
             <div id="employees" className="tab-content">
               <div className="card">
-                <h3>員工列表</h3>
+                <div className="card-header">
+                  <h3>員工列表</h3>
+                  <button
+                    className="btn btn-success"
+                    onClick={() => setTab("add-employee")}
+                  >
+                    新增員工
+                  </button>
+                </div>
                 <div id="employee-list" className="table-container">
                   {employees.length === 0 ? (
                     <span>尚無員工資料</span>
@@ -403,13 +475,49 @@ export default function AdminDashboard() {
                     <table>
                       <thead>
                         <tr>
-                          <th>姓名</th>
-                          <th>Email</th>
-                          <th>到職日</th>
-                          <th>部門</th>
-                          <th>特休天數</th>
-                          <th>補休天數</th>
-                          <th>備註</th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("name")}
+                          >
+                            姓名 {getSortIcon("name")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("email")}
+                          >
+                            Email {getSortIcon("email")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("hireDate")}
+                          >
+                            到職日 {getSortIcon("hireDate")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("department")}
+                          >
+                            部門 {getSortIcon("department")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("annualLeave")}
+                          >
+                            特休天數 {getSortIcon("annualLeave")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("compensatoryLeave")}
+                          >
+                            補休天數 {getSortIcon("compensatoryLeave")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("notes")}
+                          >
+                            備註 {getSortIcon("notes")}
+                          </th>
+                          <th>操作</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -422,6 +530,14 @@ export default function AdminDashboard() {
                             <td>{emp.annualLeave}</td>
                             <td>{emp.compensatoryLeave}</td>
                             <td>{emp.notes}</td>
+                            <td>
+                              <button
+                                className="btn btn-primary btn-sm"
+                                onClick={() => handleEditEmployee(emp)}
+                              >
+                                編輯
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -507,13 +623,48 @@ export default function AdminDashboard() {
                     <table>
                       <thead>
                         <tr>
-                          <th>員工</th>
-                          <th>日期</th>
-                          <th>假別</th>
-                          <th>天數</th>
-                          <th>申請時間</th>
-                          <th>審核時間</th>
-                          <th>狀態</th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("employee")}
+                          >
+                            員工 {getSortIcon("employee")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("date")}
+                          >
+                            日期 {getSortIcon("date")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("type")}
+                          >
+                            假別 {getSortIcon("type")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("days")}
+                          >
+                            天數 {getSortIcon("days")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("createdAt")}
+                          >
+                            申請時間 {getSortIcon("createdAt")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("updatedAt")}
+                          >
+                            審核時間 {getSortIcon("updatedAt")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("status")}
+                          >
+                            狀態 {getSortIcon("status")}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -839,6 +990,32 @@ export default function AdminDashboard() {
         .btn:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+        .sortable-header {
+          cursor: pointer;
+          user-select: none;
+          position: relative;
+          padding-right: 20px;
+        }
+        .sortable-header:hover {
+          background-color: #f8f9fa;
+        }
+        .sortable-header::after {
+          content: "";
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+        }
+        .card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1rem;
+        }
+        .btn-sm {
+          padding: 0.25rem 0.5rem;
+          font-size: 0.875rem;
         }
       `}</style>
     </div>

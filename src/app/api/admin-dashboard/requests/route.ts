@@ -20,6 +20,11 @@ export async function GET(request: Request) {
     const year = url.searchParams.get("year");
     const month = url.searchParams.get("month");
     const status = url.searchParams.get("status");
+    const sortField = url.searchParams.get("sortField");
+    const sortDirection = url.searchParams.get("sortDirection") as
+      | "asc"
+      | "desc"
+      | null;
 
     const [requests, employees] = await Promise.all([
       readLeaveRequests(),
@@ -57,6 +62,44 @@ export async function GET(request: Request) {
       filteredRequests = filteredRequests.filter(
         (req) => req.status === status
       );
+    }
+
+    // 排序
+    if (sortField && sortDirection) {
+      filteredRequests.sort((a, b) => {
+        let aValue: string | number = a[sortField as keyof typeof a] as
+          | string
+          | number;
+        let bValue: string | number = b[sortField as keyof typeof b] as
+          | string
+          | number;
+
+        // 處理日期字串
+        if (
+          sortField === "date" ||
+          sortField === "createdAt" ||
+          sortField === "updatedAt"
+        ) {
+          aValue = new Date(aValue || 0).getTime();
+          bValue = new Date(bValue || 0).getTime();
+        }
+
+        // 處理數字
+        if (sortField === "days") {
+          aValue = Number(aValue) || 0;
+          bValue = Number(bValue) || 0;
+        }
+
+        // 處理字串
+        if (typeof aValue === "string") {
+          aValue = aValue.toLowerCase();
+          bValue = (bValue as string).toLowerCase();
+        }
+
+        if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+        return 0;
+      });
     }
 
     // 分頁計算

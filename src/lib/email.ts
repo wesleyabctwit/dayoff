@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 import { LeaveRequestRow, EmployeeRow } from "./sheets";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || "");
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "";
 const FROM_EMAIL = process.env.FROM_EMAIL || "";
@@ -31,6 +31,12 @@ export async function sendLeaveRequestEmail(
   request: LeaveRequestRow,
   employee: EmployeeRow
 ) {
+  // 如果沒有設定 API 金鑰，跳過郵件發送
+  if (!process.env.RESEND_API_KEY) {
+    console.log("Resend API key not configured, skipping email notification");
+    return;
+  }
+
   const subject = `[新假單申請] ${employee.name} 的 ${request.type} 申請`;
   const body = `
     <h1>新的請假單已提交</h1>
@@ -60,7 +66,8 @@ export async function sendLeaveRequestEmail(
     });
   } catch (error) {
     console.error("郵件發送失敗:", error);
-    throw new Error("郵件發送失敗");
+    // 不拋出錯誤，避免影響主要功能
+    console.log("繼續處理，不中斷流程");
   }
 }
 
@@ -69,6 +76,12 @@ export async function sendLeaveStatusUpdateEmail(
   request: LeaveRequestRow,
   employee: EmployeeRow
 ) {
+  // 如果沒有設定 API 金鑰，跳過郵件發送
+  if (!process.env.RESEND_API_KEY) {
+    console.log("Resend API key not configured, skipping email notification");
+    return;
+  }
+
   const statusMap: { [key: string]: string } = {
     approved: "已核准",
     rejected: "已拒絕",
@@ -107,6 +120,7 @@ export async function sendLeaveStatusUpdateEmail(
     });
   } catch (error) {
     console.error("郵件發送失敗:", error);
-    throw new Error("郵件發送失敗");
+    // 不拋出錯誤，避免影響主要功能
+    console.log("繼續處理，不中斷流程");
   }
 }

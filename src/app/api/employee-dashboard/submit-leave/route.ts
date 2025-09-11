@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server";
-import {
-  addLeaveRequest,
-  findEmployeeByEmail,
-  upsertDemoDataIfEmpty,
-} from "@/lib/sheets";
+import { addLeaveRequest, findEmployeeByEmail } from "@/lib/sheets";
 import { sendLeaveRequestEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
-    await upsertDemoDataIfEmpty();
     const url = new URL(request.url);
     const email = url.searchParams.get("email");
 

@@ -2,13 +2,11 @@ import { NextResponse } from "next/server";
 import {
   getFirstEmployee,
   readLeaveHistoryByEmail,
-  upsertDemoDataIfEmpty,
   LeaveRequestRow,
 } from "@/lib/sheets";
 
 export async function GET(request: Request) {
   try {
-    await upsertDemoDataIfEmpty();
     const url = new URL(request.url);
     const email = url.searchParams.get("email");
     const year = url.searchParams.get("year");

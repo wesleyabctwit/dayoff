@@ -2,18 +2,16 @@ import { NextResponse } from "next/server";
 import {
   readLeaveRequests,
   readEmployees,
-  upsertDemoDataIfEmpty,
   LeaveRequestRow,
   EmployeeRow,
   updateLeaveRequestStatus,
   findEmployeeByEmail,
+  updateEmployeeRemainingDays,
 } from "@/lib/sheets";
 import { sendLeaveStatusUpdateEmail } from "@/lib/email";
 
 export async function GET(request: Request) {
   try {
-    await upsertDemoDataIfEmpty();
-
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get("page") || "1");
     const limit = parseInt(url.searchParams.get("limit") || "10");
@@ -35,16 +33,26 @@ export async function GET(request: Request) {
       employees.map((e: EmployeeRow) => [e.email, e.name] as const)
     );
 
-    let filteredRequests = requests.map((r: LeaveRequestRow) => ({
-      id: Number(r.id || "0"),
-      employee: emailToName.get(r.employee_email) || r.employee_email,
-      date: r.date,
-      type: r.type,
-      days: Number(r.days || "0"),
-      status: r.status,
-      createdAt: r.created_at,
-      updatedAt: r.updated_at,
-    }));
+    let filteredRequests = requests.map((r: LeaveRequestRow) => {
+      const employee = employees.find(
+        (e: EmployeeRow) => e.email === r.employee_email
+      );
+      const remainingDays = employee
+        ? Number(employee[`剩餘${r.type}` as keyof EmployeeRow] || "0")
+        : 0;
+
+      return {
+        id: Number(r.id || "0"),
+        employee: emailToName.get(r.employee_email) || r.employee_email,
+        date: r.date,
+        type: r.type,
+        days: Number(r.days || "0"),
+        remainingDays: remainingDays,
+        status: r.status,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      };
+    });
 
     // 年月份篩選
     if (year && month) {
@@ -145,6 +153,16 @@ export async function POST(request: Request) {
     const updatedRequest = await updateLeaveRequestStatus(String(id), status);
 
     if (updatedRequest) {
+      // 如果審核通過，更新員工的剩餘天數
+      if (status === "approved") {
+        const usedDays = parseFloat(updatedRequest.days || "0");
+        await updateEmployeeRemainingDays(
+          updatedRequest.employee_email,
+          updatedRequest.type,
+          usedDays
+        );
+      }
+
       const employee = await findEmployeeByEmail(updatedRequest.employee_email);
       if (employee) {
         await sendLeaveStatusUpdateEmail(updatedRequest, employee);

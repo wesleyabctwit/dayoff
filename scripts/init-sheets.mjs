@@ -1,6 +1,6 @@
 // 初始化 Google Sheets 資料表腳本
-const { GoogleSpreadsheet } = require("google-spreadsheet");
-const { JWT } = require("google-auth-library");
+import { GoogleSpreadsheet } from "google-spreadsheet";
+import { JWT } from "google-auth-library";
 
 async function initSheets() {
   const SHEET_ID = process.env.GOOGLE_SHEET_ID;
@@ -40,9 +40,22 @@ async function initSheets() {
         "password",
         "hireDate",
         "department",
-        "annualLeave",
-        "compensatoryLeave",
-        "sickLeave",
+        "特休",
+        "補休",
+        "事假",
+        "病假",
+        "喪假",
+        "育嬰假",
+        "產假",
+        "婚假",
+        "剩餘特休",
+        "剩餘補休",
+        "剩餘事假",
+        "剩餘病假",
+        "剩餘喪假",
+        "剩餘育嬰假",
+        "剩餘產假",
+        "剩餘婚假",
         "notes",
       ],
     });
@@ -56,9 +69,22 @@ async function initSheets() {
       "password",
       "hireDate",
       "department",
-      "annualLeave",
-      "compensatoryLeave",
-      "sickLeave",
+      "特休",
+      "補休",
+      "事假",
+      "病假",
+      "喪假",
+      "育嬰假",
+      "產假",
+      "婚假",
+      "剩餘特休",
+      "剩餘補休",
+      "剩餘事假",
+      "剩餘病假",
+      "剩餘喪假",
+      "剩餘育嬰假",
+      "剩餘產假",
+      "剩餘婚假",
       "notes",
     ]);
   }
@@ -72,9 +98,22 @@ async function initSheets() {
       password: "123456",
       hireDate: "2023-01-15",
       department: "技術部",
-      annualLeave: "14",
-      compensatoryLeave: "3",
-      sickLeave: "5",
+      特休: "14",
+      補休: "3",
+      事假: "7",
+      病假: "5",
+      喪假: "3",
+      育嬰假: "0",
+      產假: "0",
+      婚假: "3",
+      剩餘特休: "14",
+      剩餘補休: "3",
+      剩餘事假: "7",
+      剩餘病假: "5",
+      剩餘喪假: "3",
+      剩餘育嬰假: "0",
+      剩餘產假: "0",
+      剩餘婚假: "3",
       notes: "",
     },
     {
@@ -84,9 +123,22 @@ async function initSheets() {
       password: "123456",
       hireDate: "2022-08-01",
       department: "行銷部",
-      annualLeave: "10",
-      compensatoryLeave: "0",
-      sickLeave: "6",
+      特休: "10",
+      補休: "0",
+      事假: "5",
+      病假: "6",
+      喪假: "3",
+      育嬰假: "0",
+      產假: "0",
+      婚假: "3",
+      剩餘特休: "10",
+      剩餘補休: "0",
+      剩餘事假: "5",
+      剩餘病假: "6",
+      剩餘喪假: "3",
+      剩餘育嬰假: "0",
+      剩餘產假: "0",
+      剩餘婚假: "3",
       notes: "兼職",
     },
   ]);
@@ -125,34 +177,6 @@ async function initSheets() {
       "created_at",
     ]);
   }
-
-  // 新增示例請假資料
-  await leaveRequestsSheet.addRows([
-    {
-      id: "1",
-      employee_email: "ming@company.com",
-      date: "2024-01-10",
-      period: "全天",
-      type: "特休",
-      days: "1",
-      reason: "家中有事",
-      status: "approved",
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: "2",
-      employee_email: "hua@company.com",
-      date: "2024-01-20",
-      period: "上午",
-      type: "病假",
-      days: "0.5",
-      reason: "感冒",
-      status: "pending",
-      created_at: new Date().toISOString(),
-    },
-  ]);
-
-  console.log("✓ leave_requests 分頁已建立並填入示例資料");
 
   // 刪除不需要的分頁
   const sheetsToDelete = ["overview", "leave_request"]; // 注意：leave_request 少了 s

@@ -3,7 +3,13 @@
 import React, { useState, useEffect } from "react";
 
 type OverviewResponse = {
-  balance: { annual: number; sick: number };
+  leaveBalances: {
+    [key: string]: {
+      total: number;
+      remaining: number;
+      used: number;
+    };
+  };
   profile: { name: string; email: string; hireDate: string };
 };
 
@@ -41,6 +47,17 @@ export default function EmployeeDashboard() {
 
   // 日期驗證狀態
   const [dateError, setDateError] = useState("");
+
+  // 個人資料編輯狀態
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    password: "",
+    hireDate: "",
+    department: "",
+    notes: "",
+  });
+  const [profileMessage, setProfileMessage] = useState("");
 
   // 獲取今天日期作為最小可選日期
   const getTodayString = () => {
@@ -179,8 +196,76 @@ export default function EmployeeDashboard() {
 
   // 取得排序圖示
   const getSortIcon = (field: string) => {
-    if (sortField !== field) return "↕️";
+    if (sortField !== field) return "↕";
     return sortDirection === "asc" ? "↑" : "↓";
+  };
+
+  // 處理個人資料更新
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileMessage("");
+    setLoading(true);
+
+    const userEmail = localStorage.getItem("userEmail");
+    if (!userEmail) {
+      setProfileMessage("無法獲取使用者資訊，請重新登入");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/employee-dashboard/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: userEmail,
+          ...profileForm,
+        }),
+      });
+
+      const data: { success: boolean; message: string } = await res.json();
+      if (data.success) {
+        setProfileMessage("個人資料更新成功！");
+        setIsEditingProfile(false);
+        // 重新載入總覽資料
+        setTab("overview");
+        setTimeout(() => setTab("overview"), 100);
+      } else {
+        setProfileMessage(data.message || "更新失敗");
+      }
+    } catch {
+      setProfileMessage("伺服器錯誤");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 開始編輯個人資料
+  const startEditingProfile = () => {
+    if (overview?.profile) {
+      setProfileForm({
+        name: overview.profile.name,
+        password: "", // 密碼不預填
+        hireDate: overview.profile.hireDate,
+        department: "", // 需要從其他地方獲取部門資訊
+        notes: "",
+      });
+      setIsEditingProfile(true);
+      setProfileMessage("");
+    }
+  };
+
+  // 取消編輯個人資料
+  const cancelEditingProfile = () => {
+    setIsEditingProfile(false);
+    setProfileForm({
+      name: "",
+      password: "",
+      hireDate: "",
+      department: "",
+      notes: "",
+    });
+    setProfileMessage("");
   };
 
   // 處理請假申請表單送出
@@ -272,37 +357,204 @@ export default function EmployeeDashboard() {
             <div id="overview" className="tab-content">
               <div className="card">
                 <h3>假期餘額</h3>
-                <div id="leave-balance" className="leave-balance">
-                  <span>
-                    特休：{overview.balance.annual} 天，病假：
-                    {overview.balance.sick} 天
-                  </span>
+                <div className="leave-balance-grid">
+                  {Object.entries(overview.leaveBalances).map(
+                    ([leaveType, balance]) => (
+                      <div key={leaveType} className="leave-balance-item">
+                        <div className="leave-type">{leaveType}</div>
+                        <div className="leave-details">
+                          <span className="remaining">{balance.remaining}</span>
+                          <span className="separator">/</span>
+                          <span className="total">{balance.total}</span>
+                          <span className="unit">天</span>
+                        </div>
+                        <div className="leave-progress">
+                          <div
+                            className="progress-bar"
+                            style={{
+                              width: `${
+                                balance.total > 0
+                                  ? (balance.used / balance.total) * 100
+                                  : 0
+                              }%`,
+                            }}
+                          ></div>
+                        </div>
+                        <div className="used-info">
+                          已使用 {balance.used} 天
+                        </div>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
               <div className="card">
-                <h3>個人資料</h3>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>姓名</label>
-                    <input type="text" value={overview.profile.name} readOnly />
-                  </div>
-                  <div className="form-group">
-                    <label>Email</label>
-                    <input
-                      type="email"
-                      value={overview.profile.email}
-                      readOnly
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>到職日</label>
-                    <input
-                      type="date"
-                      value={overview.profile.hireDate}
-                      readOnly
-                    />
-                  </div>
+                <div className="card-header">
+                  <h3>個人資料</h3>
+                  {!isEditingProfile && (
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={startEditingProfile}
+                    >
+                      編輯資料
+                    </button>
+                  )}
                 </div>
+                {!isEditingProfile ? (
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>姓名</label>
+                      <input
+                        type="text"
+                        value={overview.profile.name}
+                        readOnly
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Email</label>
+                      <input
+                        type="email"
+                        value={overview.profile.email}
+                        readOnly
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>到職日</label>
+                      <input
+                        type="date"
+                        value={overview.profile.hireDate}
+                        readOnly
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleProfileUpdate} className="profile-form">
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="profile-name">姓名</label>
+                        <input
+                          type="text"
+                          id="profile-name"
+                          value={profileForm.name}
+                          onChange={(e) =>
+                            setProfileForm((f) => ({
+                              ...f,
+                              name: e.target.value,
+                            }))
+                          }
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="profile-email">Email</label>
+                        <input
+                          type="email"
+                          id="profile-email"
+                          value={overview.profile.email}
+                          readOnly
+                          className="readonly"
+                        />
+                        <small className="form-help">Email 不可修改</small>
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="profile-password">密碼</label>
+                        <input
+                          type="password"
+                          id="profile-password"
+                          value={profileForm.password}
+                          onChange={(e) =>
+                            setProfileForm((f) => ({
+                              ...f,
+                              password: e.target.value,
+                            }))
+                          }
+                          placeholder="留空表示不修改密碼"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="profile-hire-date">到職日</label>
+                        <input
+                          type="date"
+                          id="profile-hire-date"
+                          value={profileForm.hireDate}
+                          onChange={(e) =>
+                            setProfileForm((f) => ({
+                              ...f,
+                              hireDate: e.target.value,
+                            }))
+                          }
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="profile-department">部門</label>
+                        <select
+                          id="profile-department"
+                          value={profileForm.department}
+                          onChange={(e) =>
+                            setProfileForm((f) => ({
+                              ...f,
+                              department: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">請選擇部門</option>
+                          <option value="技術部">技術部</option>
+                          <option value="行銷部">行銷部</option>
+                          <option value="人事部">人事部</option>
+                          <option value="財務部">財務部</option>
+                        </select>
+                      </div>
+                      <div className="form-group">{/* 空白欄位保持對齊 */}</div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="profile-notes">備註</label>
+                      <textarea
+                        id="profile-notes"
+                        value={profileForm.notes}
+                        onChange={(e) =>
+                          setProfileForm((f) => ({
+                            ...f,
+                            notes: e.target.value,
+                          }))
+                        }
+                        placeholder="其他備註事項..."
+                      />
+                    </div>
+                    <div className="form-actions">
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        onClick={cancelEditingProfile}
+                      >
+                        取消
+                      </button>
+                      <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={loading}
+                      >
+                        {loading ? "更新中..." : "儲存"}
+                      </button>
+                    </div>
+                    {profileMessage && (
+                      <div
+                        className={`profile-message ${
+                          profileMessage.includes("成功") ? "success" : "error"
+                        }`}
+                      >
+                        <div className="message-icon">
+                          {profileMessage.includes("成功") ? "✓" : "⚠"}
+                        </div>
+                        <span>{profileMessage}</span>
+                      </div>
+                    )}
+                  </form>
+                )}
               </div>
             </div>
           )}
@@ -836,6 +1088,133 @@ export default function EmployeeDashboard() {
           right: 8px;
           top: 50%;
           transform: translateY(-50%);
+        }
+        .leave-balance-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 1.5rem;
+          margin-top: 1rem;
+        }
+        .leave-balance-item {
+          background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+          border: 2px solid #dee2e6;
+          border-radius: 12px;
+          padding: 1.5rem;
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
+        }
+        .leave-balance-item:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+          border-color: #667eea;
+        }
+        .leave-balance-item::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        }
+        .leave-type {
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: #495057;
+          margin-bottom: 0.75rem;
+        }
+        .leave-details {
+          display: flex;
+          align-items: baseline;
+          margin-bottom: 1rem;
+        }
+        .remaining {
+          font-size: 2rem;
+          font-weight: 800;
+          color: #667eea;
+        }
+        .separator {
+          font-size: 1.5rem;
+          color: #6c757d;
+          margin: 0 0.5rem;
+        }
+        .total {
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: #495057;
+        }
+        .unit {
+          font-size: 1rem;
+          color: #6c757d;
+          margin-left: 0.25rem;
+        }
+        .leave-progress {
+          width: 100%;
+          height: 8px;
+          background-color: #e9ecef;
+          border-radius: 4px;
+          overflow: hidden;
+          margin-bottom: 0.75rem;
+        }
+        .progress-bar {
+          height: 100%;
+          background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+          border-radius: 4px;
+          transition: width 0.3s ease;
+        }
+        .used-info {
+          font-size: 0.9rem;
+          color: #6c757d;
+          text-align: center;
+        }
+        .card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1rem;
+        }
+        .btn-sm {
+          padding: 0.5rem 1rem;
+          font-size: 0.875rem;
+        }
+        .profile-form {
+          margin-top: 1rem;
+        }
+        .form-help {
+          display: block;
+          margin-top: 0.25rem;
+          font-size: 0.8rem;
+          color: #6c757d;
+        }
+        .readonly {
+          background-color: #f8f9fa;
+          color: #6c757d;
+          cursor: not-allowed;
+        }
+        .profile-message {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 1rem 1.5rem;
+          border-radius: 8px;
+          font-weight: 600;
+          margin-top: 1.5rem;
+          animation: slideIn 0.3s ease-out;
+        }
+        .profile-message.success {
+          background-color: #d1fae5;
+          color: #065f46;
+          border: 2px solid #10b981;
+        }
+        .profile-message.error {
+          background-color: #fee2e2;
+          color: #991b1b;
+          border: 2px solid #ef4444;
+        }
+        .profile-message .message-icon {
+          font-size: 1.25rem;
+          font-weight: bold;
         }
       `}</style>
     </div>

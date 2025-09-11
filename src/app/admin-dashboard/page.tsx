@@ -7,6 +7,16 @@ type OverviewStats = {
   pendingRequests: number;
   leavesThisMonth: number;
   annualLeaveUsage: string;
+  monthlyLeaveStats: {
+    特休: number;
+    補休: number;
+    事假: number;
+    病假: number;
+    喪假: number;
+    育嬰假: number;
+    產假: number;
+    婚假: number;
+  };
 };
 
 type OverviewActivity = {
@@ -27,8 +37,24 @@ type EmployeeItem = {
   password: string; // 新增密碼欄位
   hireDate: string;
   department: string;
-  annualLeave: number;
-  compensatoryLeave: number;
+  // 各種假別的天數設定
+  特休: number;
+  補休: number;
+  事假: number;
+  病假: number;
+  喪假: number;
+  育嬰假: number;
+  產假: number;
+  婚假: number;
+  // 各種假別的剩餘天數
+  剩餘特休: number;
+  剩餘補休: number;
+  剩餘事假: number;
+  剩餘病假: number;
+  剩餘喪假: number;
+  剩餘育嬰假: number;
+  剩餘產假: number;
+  剩餘婚假: number;
   notes: string;
 };
 
@@ -37,6 +63,7 @@ type RequestItem = {
   date: string;
   type: string;
   days: number;
+  remainingDays: number;
   status: "pending" | "approved" | "rejected" | string;
   id: number;
   createdAt?: string;
@@ -194,8 +221,15 @@ export default function AdminDashboard() {
       password: formData.get("password") as string, // 新增密碼欄位
       hireDate: formData.get("hireDate") as string,
       department: formData.get("department") as string,
-      annualLeave: Number(formData.get("annualLeave")),
-      compensatoryLeave: Number(formData.get("compensatoryLeave")),
+      // 各種假別的天數設定
+      特休: formData.get("特休") as string,
+      補休: formData.get("補休") as string,
+      事假: formData.get("事假") as string,
+      病假: formData.get("病假") as string,
+      喪假: formData.get("喪假") as string,
+      育嬰假: formData.get("育嬰假") as string,
+      產假: formData.get("產假") as string,
+      婚假: formData.get("婚假") as string,
       notes: (formData.get("notes") as string) || "",
     };
 
@@ -298,7 +332,7 @@ export default function AdminDashboard() {
 
   // 取得排序圖示
   const getSortIcon = (field: string) => {
-    if (sortField !== field) return "↕️";
+    if (sortField !== field) return "↕";
     return sortDirection === "asc" ? "↑" : "↓";
   };
 
@@ -322,11 +356,10 @@ export default function AdminDashboard() {
           employee.hireDate;
         (form.querySelector('[name="department"]') as HTMLSelectElement).value =
           employee.department;
-        (form.querySelector('[name="annualLeave"]') as HTMLInputElement).value =
-          employee.annualLeave.toString();
-        (
-          form.querySelector('[name="compensatoryLeave"]') as HTMLInputElement
-        ).value = employee.compensatoryLeave.toString();
+        (form.querySelector('[name="特休"]') as HTMLInputElement).value =
+          employee.特休.toString();
+        (form.querySelector('[name="補休"]') as HTMLInputElement).value =
+          employee.補休.toString();
         (form.querySelector('[name="notes"]') as HTMLTextAreaElement).value =
           employee.notes;
       }
@@ -392,35 +425,55 @@ export default function AdminDashboard() {
           {tab === "overview" && !!overview?.stats && !loading && (
             <div id="overview" className="tab-content">
               <div className="card">
-                <h3>系統統計</h3>
-                <div className="leave-balance">
-                  <div className="balance-item">
-                    <h4>總員工數</h4>
-                    <div className="amount">
-                      {overview.stats.totalEmployees}
-                    </div>
-                    <div>人</div>
+                <h3>當月請假統計</h3>
+                <div className="leave-stats-grid">
+                  <div className="leave-stat-item">
+                    <span className="leave-type">特休</span>
+                    <span className="leave-count">
+                      {overview.stats.monthlyLeaveStats.特休} 次
+                    </span>
                   </div>
-                  <div className="balance-item">
-                    <h4>待審核申請</h4>
-                    <div className="amount">
-                      {overview.stats.pendingRequests}
-                    </div>
-                    <div>件</div>
+                  <div className="leave-stat-item">
+                    <span className="leave-type">補休</span>
+                    <span className="leave-count">
+                      {overview.stats.monthlyLeaveStats.補休} 次
+                    </span>
                   </div>
-                  <div className="balance-item">
-                    <h4>本月請假</h4>
-                    <div className="amount">
-                      {overview.stats.leavesThisMonth}
-                    </div>
-                    <div>次</div>
+                  <div className="leave-stat-item">
+                    <span className="leave-type">事假</span>
+                    <span className="leave-count">
+                      {overview.stats.monthlyLeaveStats.事假} 次
+                    </span>
                   </div>
-                  <div className="balance-item">
-                    <h4>特休使用率</h4>
-                    <div className="amount">
-                      {overview.stats.annualLeaveUsage}
-                    </div>
-                    <div>平均</div>
+                  <div className="leave-stat-item">
+                    <span className="leave-type">病假</span>
+                    <span className="leave-count">
+                      {overview.stats.monthlyLeaveStats.病假} 次
+                    </span>
+                  </div>
+                  <div className="leave-stat-item">
+                    <span className="leave-type">喪假</span>
+                    <span className="leave-count">
+                      {overview.stats.monthlyLeaveStats.喪假} 次
+                    </span>
+                  </div>
+                  <div className="leave-stat-item">
+                    <span className="leave-type">育嬰假</span>
+                    <span className="leave-count">
+                      {overview.stats.monthlyLeaveStats.育嬰假} 次
+                    </span>
+                  </div>
+                  <div className="leave-stat-item">
+                    <span className="leave-type">產假</span>
+                    <span className="leave-count">
+                      {overview.stats.monthlyLeaveStats.產假} 次
+                    </span>
+                  </div>
+                  <div className="leave-stat-item">
+                    <span className="leave-type">婚假</span>
+                    <span className="leave-count">
+                      {overview.stats.monthlyLeaveStats.婚假} 次
+                    </span>
                   </div>
                 </div>
               </div>
@@ -507,15 +560,51 @@ export default function AdminDashboard() {
                           </th>
                           <th
                             className="sortable-header"
-                            onClick={() => handleSort("annualLeave")}
+                            onClick={() => handleSort("特休")}
                           >
-                            特休天數 {getSortIcon("annualLeave")}
+                            特休 {getSortIcon("特休")}
                           </th>
                           <th
                             className="sortable-header"
-                            onClick={() => handleSort("compensatoryLeave")}
+                            onClick={() => handleSort("補休")}
                           >
-                            補休天數 {getSortIcon("compensatoryLeave")}
+                            補休 {getSortIcon("補休")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("事假")}
+                          >
+                            事假 {getSortIcon("事假")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("病假")}
+                          >
+                            病假 {getSortIcon("病假")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("喪假")}
+                          >
+                            喪假 {getSortIcon("喪假")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("育嬰假")}
+                          >
+                            育嬰假 {getSortIcon("育嬰假")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("產假")}
+                          >
+                            產假 {getSortIcon("產假")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("婚假")}
+                          >
+                            婚假 {getSortIcon("婚假")}
                           </th>
                           <th
                             className="sortable-header"
@@ -533,8 +622,30 @@ export default function AdminDashboard() {
                             <td>{emp.email}</td>
                             <td>{emp.hireDate}</td>
                             <td>{emp.department}</td>
-                            <td>{emp.annualLeave}</td>
-                            <td>{emp.compensatoryLeave}</td>
+                            <td>
+                              {emp.剩餘特休}/{emp.特休}
+                            </td>
+                            <td>
+                              {emp.剩餘補休}/{emp.補休}
+                            </td>
+                            <td>
+                              {emp.剩餘事假}/{emp.事假}
+                            </td>
+                            <td>
+                              {emp.剩餘病假}/{emp.病假}
+                            </td>
+                            <td>
+                              {emp.剩餘喪假}/{emp.喪假}
+                            </td>
+                            <td>
+                              {emp.剩餘育嬰假}/{emp.育嬰假}
+                            </td>
+                            <td>
+                              {emp.剩餘產假}/{emp.產假}
+                            </td>
+                            <td>
+                              {emp.剩餘婚假}/{emp.婚假}
+                            </td>
                             <td>{emp.notes}</td>
                             <td>
                               <button
@@ -672,7 +783,13 @@ export default function AdminDashboard() {
                             className="sortable-header"
                             onClick={() => handleSort("days")}
                           >
-                            天數 {getSortIcon("days")}
+                            申請天數 {getSortIcon("days")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("remainingDays")}
+                          >
+                            剩餘天數 {getSortIcon("remainingDays")}
                           </th>
                           <th
                             className="sortable-header"
@@ -701,6 +818,17 @@ export default function AdminDashboard() {
                             <td>{req.date}</td>
                             <td>{req.type}</td>
                             <td>{req.days}</td>
+                            <td>
+                              <span
+                                className={`remaining-days ${
+                                  req.remainingDays < req.days
+                                    ? "insufficient"
+                                    : "sufficient"
+                                }`}
+                              >
+                                {req.remainingDays}
+                              </span>
+                            </td>
                             <td>{formatDateTime(req.createdAt)}</td>
                             <td>{formatDateTime(req.updatedAt)}</td>
                             <td>
@@ -844,13 +972,11 @@ export default function AdminDashboard() {
                       </select>
                     </div>
                     <div className="form-group">
-                      <label htmlFor="new-employee-annual-leave">
-                        特休天數
-                      </label>
+                      <label htmlFor="new-employee-特休">特休天數</label>
                       <input
                         type="number"
-                        id="new-employee-annual-leave"
-                        name="annualLeave"
+                        id="new-employee-特休"
+                        name="特休"
                         min={0}
                         max={30}
                         defaultValue={14}
@@ -858,19 +984,101 @@ export default function AdminDashboard() {
                       />
                     </div>
                   </div>
-                  <div className="form-group">
-                    <label htmlFor="new-employee-compensatory-leave">
-                      補休天數
-                    </label>
-                    <input
-                      type="number"
-                      id="new-employee-compensatory-leave"
-                      name="compensatoryLeave"
-                      min={0}
-                      max={30}
-                      defaultValue={0}
-                      required
-                    />
+                  <div className="form-section">
+                    <h4>假期天數設定</h4>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="new-employee-補休">補休天數</label>
+                        <input
+                          type="number"
+                          id="new-employee-補休"
+                          name="補休"
+                          min={0}
+                          max={30}
+                          defaultValue={0}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="new-employee-事假">事假天數</label>
+                        <input
+                          type="number"
+                          id="new-employee-事假"
+                          name="事假"
+                          min={0}
+                          max={30}
+                          defaultValue={7}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="new-employee-病假">病假天數</label>
+                        <input
+                          type="number"
+                          id="new-employee-病假"
+                          name="病假"
+                          min={0}
+                          max={30}
+                          defaultValue={5}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="new-employee-喪假">喪假天數</label>
+                        <input
+                          type="number"
+                          id="new-employee-喪假"
+                          name="喪假"
+                          min={0}
+                          max={30}
+                          defaultValue={3}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="new-employee-育嬰假">育嬰假天數</label>
+                        <input
+                          type="number"
+                          id="new-employee-育嬰假"
+                          name="育嬰假"
+                          min={0}
+                          max={30}
+                          defaultValue={0}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="new-employee-產假">產假天數</label>
+                        <input
+                          type="number"
+                          id="new-employee-產假"
+                          name="產假"
+                          min={0}
+                          max={30}
+                          defaultValue={0}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="new-employee-婚假">婚假天數</label>
+                        <input
+                          type="number"
+                          id="new-employee-婚假"
+                          name="婚假"
+                          min={0}
+                          max={30}
+                          defaultValue={3}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">{/* 空白欄位保持對齊 */}</div>
+                    </div>
                   </div>
                   <div className="form-group">
                     <label htmlFor="new-employee-notes">備註</label>
@@ -1043,6 +1251,82 @@ export default function AdminDashboard() {
         .btn-sm {
           padding: 0.25rem 0.5rem;
           font-size: 0.875rem;
+        }
+        .form-section {
+          margin: 2rem 0;
+          padding: 1.5rem;
+          background-color: #f8f9fa;
+          border-radius: 8px;
+          border: 1px solid #e9ecef;
+        }
+        .form-section h4 {
+          margin: 0 0 1.5rem 0;
+          color: #495057;
+          font-size: 1.1rem;
+          font-weight: 600;
+          border-bottom: 2px solid #dee2e6;
+          padding-bottom: 0.5rem;
+        }
+        .form-group input[type="number"] {
+          background-color: #fff;
+          border: 2px solid #e1e5e9;
+          border-radius: 6px;
+          padding: 0.75rem;
+          font-size: 1rem;
+          transition: all 0.3s ease;
+        }
+        .form-group input[type="number"]:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .form-group input[type="number"]:hover {
+          border-color: #c7d2fe;
+        }
+        .remaining-days {
+          font-weight: 600;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.9rem;
+        }
+        .remaining-days.sufficient {
+          background-color: #d1fae5;
+          color: #065f46;
+        }
+        .remaining-days.insufficient {
+          background-color: #fee2e2;
+          color: #991b1b;
+        }
+        .leave-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 1rem;
+          margin-top: 1rem;
+        }
+        .leave-stat-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 1rem;
+          background-color: #f8f9fa;
+          border-radius: 8px;
+          border: 1px solid #e9ecef;
+          transition: all 0.3s ease;
+        }
+        .leave-stat-item:hover {
+          background-color: #e9ecef;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .leave-type {
+          font-weight: 600;
+          color: #495057;
+          font-size: 1rem;
+        }
+        .leave-count {
+          font-weight: 700;
+          color: #667eea;
+          font-size: 1.1rem;
         }
       `}</style>
     </div>

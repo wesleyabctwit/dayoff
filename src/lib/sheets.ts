@@ -19,9 +19,24 @@ export type EmployeeRow = {
   password: string; // 新增密碼欄位
   hireDate: string;
   department?: string;
-  annualLeave?: string; // 特休剩餘天數
-  compensatoryLeave?: string; // 補休剩餘天數
-  sickLeave?: string; // 病假剩餘天數
+  // 各種假別的天數設定
+  特休?: string; // 特休總天數
+  補休?: string; // 補休總天數
+  事假?: string; // 事假總天數
+  病假?: string; // 病假總天數
+  喪假?: string; // 喪假總天數
+  育嬰假?: string; // 育嬰假總天數
+  產假?: string; // 產假總天數
+  婚假?: string; // 婚假總天數
+  // 各種假別的剩餘天數
+  剩餘特休?: string; // 特休剩餘天數
+  剩餘補休?: string; // 補休剩餘天數
+  剩餘事假?: string; // 事假剩餘天數
+  剩餘病假?: string; // 病假剩餘天數
+  剩餘喪假?: string; // 喪假剩餘天數
+  剩餘育嬰假?: string; // 育嬰假剩餘天數
+  剩餘產假?: string; // 產假剩餘天數
+  剩餘婚假?: string; // 婚假剩餘天數
   notes?: string;
 };
 
@@ -46,9 +61,24 @@ const EMPLOYEES_HEADERS: Array<keyof EmployeeRow> = [
   "password", // 新增密碼欄位
   "hireDate",
   "department",
-  "annualLeave",
-  "compensatoryLeave",
-  "sickLeave",
+  // 各種假別的天數設定
+  "特休",
+  "補休",
+  "事假",
+  "病假",
+  "喪假",
+  "育嬰假",
+  "產假",
+  "婚假",
+  // 各種假別的剩餘天數
+  "剩餘特休",
+  "剩餘補休",
+  "剩餘事假",
+  "剩餘病假",
+  "剩餘喪假",
+  "剩餘育嬰假",
+  "剩餘產假",
+  "剩餘婚假",
   "notes",
 ];
 
@@ -141,9 +171,24 @@ export async function readEmployees(): Promise<EmployeeRow[]> {
     password: safeGet(r, "password"), // 新增密碼欄位
     hireDate: safeGet(r, "hireDate"),
     department: safeGet(r, "department"),
-    annualLeave: safeGet(r, "annualLeave"),
-    compensatoryLeave: safeGet(r, "compensatoryLeave"),
-    sickLeave: safeGet(r, "sickLeave"),
+    // 各種假別的天數設定
+    特休: safeGet(r, "特休"),
+    補休: safeGet(r, "補休"),
+    事假: safeGet(r, "事假"),
+    病假: safeGet(r, "病假"),
+    喪假: safeGet(r, "喪假"),
+    育嬰假: safeGet(r, "育嬰假"),
+    產假: safeGet(r, "產假"),
+    婚假: safeGet(r, "婚假"),
+    // 各種假別的剩餘天數
+    剩餘特休: safeGet(r, "剩餘特休"),
+    剩餘補休: safeGet(r, "剩餘補休"),
+    剩餘事假: safeGet(r, "剩餘事假"),
+    剩餘病假: safeGet(r, "剩餘病假"),
+    剩餘喪假: safeGet(r, "剩餘喪假"),
+    剩餘育嬰假: safeGet(r, "剩餘育嬰假"),
+    剩餘產假: safeGet(r, "剩餘產假"),
+    剩餘婚假: safeGet(r, "剩餘婚假"),
     notes: safeGet(r, "notes"),
   }));
 }
@@ -273,6 +318,99 @@ export async function updateLeaveRequestStatus(
   return null;
 }
 
+export async function updateEmployeeRemainingDays(
+  email: string,
+  leaveType: string,
+  usedDays: number
+): Promise<EmployeeRow | null> {
+  const sheet = await getEmployeesSheet();
+  const rows = await sheet.getRows<EmployeeRow>();
+  const row = rows.find((r) => safeGet(r, "email") === email);
+
+  if (row) {
+    const remainingField = `剩餘${leaveType}`;
+    const currentRemaining = Number(safeGet(row, remainingField) || "0");
+    const newRemaining = Math.max(0, currentRemaining - usedDays);
+
+    row.set(remainingField as keyof EmployeeRow, String(newRemaining));
+    await row.save();
+
+    return {
+      id: safeGet(row, "id"),
+      name: safeGet(row, "name"),
+      email: safeGet(row, "email"),
+      password: safeGet(row, "password"),
+      hireDate: safeGet(row, "hireDate"),
+      department: safeGet(row, "department"),
+      特休: safeGet(row, "特休"),
+      補休: safeGet(row, "補休"),
+      事假: safeGet(row, "事假"),
+      病假: safeGet(row, "病假"),
+      喪假: safeGet(row, "喪假"),
+      育嬰假: safeGet(row, "育嬰假"),
+      產假: safeGet(row, "產假"),
+      婚假: safeGet(row, "婚假"),
+      剩餘特休: safeGet(row, "剩餘特休"),
+      剩餘補休: safeGet(row, "剩餘補休"),
+      剩餘事假: safeGet(row, "剩餘事假"),
+      剩餘病假: safeGet(row, "剩餘病假"),
+      剩餘喪假: safeGet(row, "剩餘喪假"),
+      剩餘育嬰假: safeGet(row, "剩餘育嬰假"),
+      剩餘產假: safeGet(row, "剩餘產假"),
+      剩餘婚假: safeGet(row, "剩餘婚假"),
+      notes: safeGet(row, "notes"),
+    };
+  }
+  return null;
+}
+
+export async function updateEmployee(
+  email: string,
+  updates: Partial<Omit<EmployeeRow, "id" | "email">>
+): Promise<EmployeeRow | null> {
+  const sheet = await getEmployeesSheet();
+  const rows = await sheet.getRows<EmployeeRow>();
+  const row = rows.find((r) => safeGet(r, "email") === email);
+
+  if (row) {
+    // 更新允許修改的欄位
+    if (updates.name) row.set("name", updates.name);
+    if (updates.password) row.set("password", updates.password);
+    if (updates.hireDate) row.set("hireDate", updates.hireDate);
+    if (updates.department) row.set("department", updates.department);
+    if (updates.notes) row.set("notes", updates.notes);
+
+    await row.save();
+
+    return {
+      id: safeGet(row, "id"),
+      name: safeGet(row, "name"),
+      email: safeGet(row, "email"),
+      password: safeGet(row, "password"),
+      hireDate: safeGet(row, "hireDate"),
+      department: safeGet(row, "department"),
+      特休: safeGet(row, "特休"),
+      補休: safeGet(row, "補休"),
+      事假: safeGet(row, "事假"),
+      病假: safeGet(row, "病假"),
+      喪假: safeGet(row, "喪假"),
+      育嬰假: safeGet(row, "育嬰假"),
+      產假: safeGet(row, "產假"),
+      婚假: safeGet(row, "婚假"),
+      剩餘特休: safeGet(row, "剩餘特休"),
+      剩餘補休: safeGet(row, "剩餘補休"),
+      剩餘事假: safeGet(row, "剩餘事假"),
+      剩餘病假: safeGet(row, "剩餘病假"),
+      剩餘喪假: safeGet(row, "剩餘喪假"),
+      剩餘育嬰假: safeGet(row, "剩餘育嬰假"),
+      剩餘產假: safeGet(row, "剩餘產假"),
+      剩餘婚假: safeGet(row, "剩餘婚假"),
+      notes: safeGet(row, "notes"),
+    };
+  }
+  return null;
+}
+
 export async function addEmployee(
   partial: Omit<EmployeeRow, "id">
 ): Promise<EmployeeRow> {
@@ -299,9 +437,24 @@ export async function addEmployee(
     password: partial.password, // 新增密碼欄位
     hireDate: partial.hireDate,
     department: partial.department,
-    annualLeave: partial.annualLeave,
-    compensatoryLeave: partial.compensatoryLeave,
-    sickLeave: partial.sickLeave,
+    // 各種假別的天數設定
+    特休: partial.特休,
+    補休: partial.補休,
+    事假: partial.事假,
+    病假: partial.病假,
+    喪假: partial.喪假,
+    育嬰假: partial.育嬰假,
+    產假: partial.產假,
+    婚假: partial.婚假,
+    // 各種假別的剩餘天數（初始化時等於總天數）
+    剩餘特休: partial.剩餘特休 || partial.特休,
+    剩餘補休: partial.剩餘補休 || partial.補休,
+    剩餘事假: partial.剩餘事假 || partial.事假,
+    剩餘病假: partial.剩餘病假 || partial.病假,
+    剩餘喪假: partial.剩餘喪假 || partial.喪假,
+    剩餘育嬰假: partial.剩餘育嬰假 || partial.育嬰假,
+    剩餘產假: partial.剩餘產假 || partial.產假,
+    剩餘婚假: partial.剩餘婚假 || partial.婚假,
     notes: partial.notes,
   };
   await sheet.addRow(row as unknown as Record<string, string>);
@@ -311,12 +464,29 @@ export async function addEmployee(
 export async function calculateUsedLeaveDays(
   email: string,
   year: number = new Date().getFullYear()
-): Promise<{ annual: number; sick: number }> {
+): Promise<{
+  特休: number;
+  補休: number;
+  事假: number;
+  病假: number;
+  喪假: number;
+  育嬰假: number;
+  產假: number;
+  婚假: number;
+}> {
   const leaveHistory = await readLeaveHistoryByEmail(email);
   const currentYear = year;
 
-  let usedAnnual = 0;
-  let usedSick = 0;
+  const usedDays = {
+    特休: 0,
+    補休: 0,
+    事假: 0,
+    病假: 0,
+    喪假: 0,
+    育嬰假: 0,
+    產假: 0,
+    婚假: 0,
+  };
 
   for (const request of leaveHistory) {
     // 只計算已核准的請假申請
@@ -327,86 +497,12 @@ export async function calculateUsedLeaveDays(
     if (requestDate.getFullYear() !== currentYear) continue;
 
     const days = parseFloat(request.days || "0");
+    const leaveType = request.type as keyof typeof usedDays;
 
-    if (request.type === "特休") {
-      usedAnnual += days;
-    } else if (request.type === "病假") {
-      usedSick += days;
+    if (leaveType in usedDays) {
+      usedDays[leaveType] += days;
     }
   }
 
-  return { annual: usedAnnual, sick: usedSick };
-}
-
-export async function upsertDemoDataIfEmpty(): Promise<void> {
-  // Optional helper: if sheets are empty, seed some demo rows so the UI won't be blank
-  const empSheet = await getEmployeesSheet();
-  const empRows = await empSheet.getRows<EmployeeRow>();
-  if (empRows.length === 0) {
-    const seedEmployees: EmployeeRow[] = [
-      {
-        id: "1",
-        name: "張小明",
-        email: "ming@company.com",
-        password: "123456", // 新增密碼
-        hireDate: "2023-01-15",
-        department: "技術部",
-        annualLeave: "14",
-        compensatoryLeave: "3",
-        sickLeave: "5",
-        notes: "",
-      },
-      {
-        id: "2",
-        name: "李小華",
-        email: "hua@company.com",
-        password: "123456", // 新增密碼
-        hireDate: "2022-08-01",
-        department: "行銷部",
-        annualLeave: "10",
-        compensatoryLeave: "0",
-        sickLeave: "6",
-        notes: "兼職",
-      },
-    ];
-    for (const r of seedEmployees) {
-      // eslint-disable-next-line no-await-in-loop
-      await empSheet.addRow(r as unknown as Record<string, string>);
-    }
-  }
-
-  const reqSheet = await getLeaveRequestsSheet();
-  const reqRows = await reqSheet.getRows<LeaveRequestRow>();
-  if (reqRows.length === 0) {
-    const seedRequests: LeaveRequestRow[] = [
-      {
-        id: "1",
-        employee_email: "ming@company.com",
-        date: "2024-01-10",
-        period: "全天",
-        type: "特休",
-        days: "1",
-        reason: "家中有事",
-        status: "approved",
-        created_at: new Date().toISOString(),
-        updated_at: "",
-      },
-      {
-        id: "2",
-        employee_email: "hua@company.com",
-        date: "2024-01-20",
-        period: "上午",
-        type: "病假",
-        days: "0.5",
-        reason: "感冒",
-        status: "pending",
-        created_at: new Date().toISOString(),
-        updated_at: "",
-      },
-    ];
-    for (const r of seedRequests) {
-      // eslint-disable-next-line no-await-in-loop
-      await reqSheet.addRow(r as unknown as Record<string, string>);
-    }
-  }
+  return usedDays;
 }

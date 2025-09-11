@@ -11,6 +11,14 @@ export async function GET(request: Request) {
     await upsertDemoDataIfEmpty();
     const url = new URL(request.url);
     const email = url.searchParams.get("email");
+    const year = url.searchParams.get("year");
+    const month = url.searchParams.get("month");
+    const type = url.searchParams.get("type");
+    const sortField = url.searchParams.get("sortField");
+    const sortDirection = url.searchParams.get("sortDirection") as
+      | "asc"
+      | "desc"
+      | null;
 
     if (!email) {
       return NextResponse.json(
@@ -19,7 +27,68 @@ export async function GET(request: Request) {
       );
     }
 
-    const history = await readLeaveHistoryByEmail(email);
+    let history = await readLeaveHistoryByEmail(email);
+
+    // 篩選功能
+    if (year) {
+      history = history.filter((h) => {
+        const requestDate = new Date(h.date);
+        return requestDate.getFullYear() === parseInt(year);
+      });
+    }
+
+    if (month) {
+      history = history.filter((h) => {
+        const requestDate = new Date(h.date);
+        return requestDate.getMonth() + 1 === parseInt(month);
+      });
+    }
+
+    if (type) {
+      history = history.filter((h) => h.type === type);
+    }
+
+    // 排序功能
+    if (sortField) {
+      history.sort((a, b) => {
+        let aValue: any;
+        let bValue: any;
+
+        switch (sortField) {
+          case "date":
+            aValue = new Date(a.date).getTime();
+            bValue = new Date(b.date).getTime();
+            break;
+          case "type":
+            aValue = a.type;
+            bValue = b.type;
+            break;
+          case "period":
+            aValue = a.period;
+            bValue = b.period;
+            break;
+          case "days":
+            aValue = Number(a.days || "0");
+            bValue = Number(b.days || "0");
+            break;
+          case "reason":
+            aValue = a.reason;
+            bValue = b.reason;
+            break;
+          case "status":
+            aValue = a.status;
+            bValue = b.status;
+            break;
+          default:
+            return 0;
+        }
+
+        if (aValue < bValue) return sortDirection === "desc" ? 1 : -1;
+        if (aValue > bValue) return sortDirection === "desc" ? -1 : 1;
+        return 0;
+      });
+    }
+
     const mapped = history.map((h: LeaveRequestRow) => ({
       date: h.date,
       type: h.type,

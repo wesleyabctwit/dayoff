@@ -32,6 +32,42 @@ export default function EmployeeDashboard() {
   const [error, setError] = useState("");
   const [userName, setUserName] = useState("員工");
 
+  // 篩選和排序狀態
+  const [selectedYear, setSelectedYear] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+  const [sortField, setSortField] = useState("date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+  // 日期驗證狀態
+  const [dateError, setDateError] = useState("");
+
+  // 獲取今天日期作為最小可選日期
+  const getTodayString = () => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  };
+
+  // 驗證日期是否有效
+  const validateDate = (dateString: string) => {
+    if (!dateString) {
+      setDateError("");
+      return true;
+    }
+
+    const selectedDate = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (selectedDate < today) {
+      setDateError("請假日期不能選擇過去的日期");
+      return false;
+    }
+
+    setDateError("");
+    return true;
+  };
+
   // 載入使用者資訊
   useEffect(() => {
     const storedUserName = localStorage.getItem("userName");
@@ -84,11 +120,19 @@ export default function EmployeeDashboard() {
         .catch(() => setError("載入失敗"))
         .finally(() => setLoading(false));
     } else if (tab === "history") {
-      fetch(
-        `/api/employee-dashboard/leave-history?email=${encodeURIComponent(
-          userEmail
-        )}`
-      )
+      const params = new URLSearchParams({
+        email: userEmail,
+      });
+
+      if (selectedYear) params.append("year", selectedYear);
+      if (selectedMonth) params.append("month", selectedMonth);
+      if (selectedType) params.append("type", selectedType);
+      if (sortField) {
+        params.append("sortField", sortField);
+        params.append("sortDirection", sortDirection);
+      }
+
+      fetch(`/api/employee-dashboard/leave-history?${params.toString()}`)
         .then((res) => res.json())
         .then((data: { history: HistoryItem[] }) => setHistory(data.history))
         .catch(() => setError("載入失敗"))
@@ -96,7 +140,48 @@ export default function EmployeeDashboard() {
     } else {
       setLoading(false);
     }
-  }, [tab]);
+  }, [
+    tab,
+    selectedYear,
+    selectedMonth,
+    selectedType,
+    sortField,
+    sortDirection,
+  ]);
+
+  // 處理篩選條件變更
+  const handleFilterChange = (type: string, value: string) => {
+    if (type === "year") {
+      setSelectedYear(value);
+    } else if (type === "month") {
+      setSelectedMonth(value);
+    } else if (type === "type") {
+      setSelectedType(value);
+    }
+  };
+
+  // 清除篩選條件
+  const clearFilters = () => {
+    setSelectedYear("");
+    setSelectedMonth("");
+    setSelectedType("");
+  };
+
+  // 處理排序
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // 取得排序圖示
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) return "↕️";
+    return sortDirection === "asc" ? "↑" : "↓";
+  };
 
   // 處理請假申請表單送出
   const submitLeaveRequest = async (e: React.FormEvent) => {
@@ -108,6 +193,12 @@ export default function EmployeeDashboard() {
     const userEmail = localStorage.getItem("userEmail");
     if (!userEmail) {
       setSubmitMsg("無法獲取使用者資訊，請重新登入");
+      setLoading(false);
+      return;
+    }
+
+    // 驗證日期不能是過去的日期
+    if (!validateDate(form.date)) {
       setLoading(false);
       return;
     }
@@ -218,9 +309,12 @@ export default function EmployeeDashboard() {
           {/* 請假申請頁面 */}
           {tab === "apply" && (
             <div id="apply" className="tab-content">
-              <div className="card">
-                <h3>請假申請</h3>
-                <form onSubmit={submitLeaveRequest}>
+              <div className="card form-card">
+                <div className="form-header">
+                  <h3>請假申請</h3>
+                  <p className="form-description">請填寫以下資訊提交請假申請</p>
+                </div>
+                <form onSubmit={submitLeaveRequest} className="leave-form">
                   <div className="form-row">
                     <div className="form-group">
                       <label htmlFor="leave-date">請假日期</label>
@@ -229,11 +323,20 @@ export default function EmployeeDashboard() {
                         id="leave-date"
                         name="leave-date"
                         required
+                        min={getTodayString()}
                         value={form.date}
-                        onChange={(e) =>
-                          setForm((f) => ({ ...f, date: e.target.value }))
-                        }
+                        onChange={(e) => {
+                          const newDate = e.target.value;
+                          setForm((f) => ({ ...f, date: newDate }));
+                          validateDate(newDate);
+                        }}
                       />
+                      {dateError && (
+                        <div className="field-error">
+                          <span className="error-icon">⚠</span>
+                          {dateError}
+                        </div>
+                      )}
                     </div>
                     <div className="form-group">
                       <label htmlFor="leave-period">時段</label>
@@ -306,38 +409,42 @@ export default function EmployeeDashboard() {
                       }
                     ></textarea>
                   </div>
-                  <div className="form-group">
+                  <div className="form-actions">
                     <button
                       type="submit"
-                      className="btn btn-success"
+                      className="btn btn-primary btn-large"
                       disabled={loading}
                     >
                       {loading ? "送出中..." : "提交申請"}
                     </button>
                     <button
                       type="reset"
-                      className="btn btn-secondary"
-                      onClick={() =>
+                      className="btn btn-outline btn-large"
+                      onClick={() => {
                         setForm({
                           date: "",
                           period: "",
                           type: "",
                           days: "",
                           reason: "",
-                        })
-                      }
+                        });
+                        setDateError("");
+                        setSubmitMsg("");
+                      }}
                     >
                       重置
                     </button>
                   </div>
                   {submitMsg && (
                     <div
-                      style={{
-                        color: submitMsg.includes("成功") ? "green" : "red",
-                        marginTop: 8,
-                      }}
+                      className={`submit-message ${
+                        submitMsg.includes("成功") ? "success" : "error"
+                      }`}
                     >
-                      {submitMsg}
+                      <div className="message-icon">
+                        {submitMsg.includes("成功") ? "✓" : "⚠"}
+                      </div>
+                      <span>{submitMsg}</span>
                     </div>
                   )}
                 </form>
@@ -349,19 +456,118 @@ export default function EmployeeDashboard() {
             <div id="history" className="tab-content">
               <div className="card">
                 <h3>請假紀錄</h3>
+
+                {/* 篩選控制項 */}
+                <div className="filter-controls">
+                  <div className="filter-group">
+                    <label htmlFor="year-filter">年份：</label>
+                    <select
+                      id="year-filter"
+                      value={selectedYear}
+                      onChange={(e) =>
+                        handleFilterChange("year", e.target.value)
+                      }
+                    >
+                      <option value="">全部年份</option>
+                      <option value="2024">2024</option>
+                      <option value="2025">2025</option>
+                    </select>
+                  </div>
+
+                  <div className="filter-group">
+                    <label htmlFor="month-filter">月份：</label>
+                    <select
+                      id="month-filter"
+                      value={selectedMonth}
+                      onChange={(e) =>
+                        handleFilterChange("month", e.target.value)
+                      }
+                    >
+                      <option value="">全部月份</option>
+                      {Array.from({ length: 12 }, (_, i) => {
+                        const month = (i + 1).toString().padStart(2, "0");
+                        return (
+                          <option key={month} value={month}>
+                            {month}月
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  <div className="filter-group">
+                    <label htmlFor="type-filter">假別：</label>
+                    <select
+                      id="type-filter"
+                      value={selectedType}
+                      onChange={(e) =>
+                        handleFilterChange("type", e.target.value)
+                      }
+                    >
+                      <option value="">全部假別</option>
+                      <option value="特休">特休</option>
+                      <option value="補休">補休</option>
+                      <option value="事假">事假</option>
+                      <option value="病假">病假</option>
+                      <option value="喪假">喪假</option>
+                      <option value="育嬰假">育嬰假</option>
+                      <option value="產假">產假</option>
+                      <option value="婚假">婚假</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={clearFilters}
+                  >
+                    清除篩選
+                  </button>
+                </div>
+
                 <div id="leave-history" className="table-container">
                   {history.length === 0 ? (
-                    <span>尚無請假紀錄</span>
+                    <span>尚無符合條件的請假紀錄</span>
                   ) : (
                     <table>
                       <thead>
                         <tr>
-                          <th>日期</th>
-                          <th>假別</th>
-                          <th>時段</th>
-                          <th>天數</th>
-                          <th>原因</th>
-                          <th>狀態</th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("date")}
+                          >
+                            日期 {getSortIcon("date")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("type")}
+                          >
+                            假別 {getSortIcon("type")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("period")}
+                          >
+                            時段 {getSortIcon("period")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("days")}
+                          >
+                            天數 {getSortIcon("days")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("reason")}
+                          >
+                            原因 {getSortIcon("reason")}
+                          </th>
+                          <th
+                            className="sortable-header"
+                            onClick={() => handleSort("status")}
+                          >
+                            狀態 {getSortIcon("status")}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -392,6 +598,246 @@ export default function EmployeeDashboard() {
           )}
         </div>
       </div>
+      <style jsx>{`
+        .filter-controls {
+          display: flex;
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+          padding: 1rem;
+          background-color: #f8f9fa;
+          border-radius: 8px;
+          flex-wrap: wrap;
+          align-items: end;
+        }
+        .filter-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        .filter-group label {
+          font-weight: 500;
+          color: #333;
+          font-size: 0.9rem;
+        }
+        .filter-group select {
+          padding: 0.5rem;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          background-color: white;
+          min-width: 120px;
+        }
+        /* 表單控制項樣式 */
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+          width: 100%;
+          padding: 0.75rem 1rem;
+          border: 2px solid #e1e5e9;
+          border-radius: 8px;
+          font-size: 1rem;
+          transition: all 0.3s ease;
+          background-color: #fff;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+          transform: translateY(-1px);
+        }
+        .form-group input:hover,
+        .form-group select:hover,
+        .form-group textarea:hover {
+          border-color: #c7d2fe;
+        }
+        .form-group label {
+          display: block;
+          margin-bottom: 0.5rem;
+          font-weight: 600;
+          color: #374151;
+          font-size: 0.95rem;
+        }
+        .form-group textarea {
+          min-height: 100px;
+          resize: vertical;
+        }
+
+        /* 按鈕樣式 */
+        .btn {
+          padding: 0.75rem 1.5rem;
+          border-radius: 8px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          border: 2px solid transparent;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+          min-width: 120px;
+        }
+        .btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .btn:active {
+          transform: translateY(0);
+        }
+        .btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
+        .btn-large {
+          padding: 1rem 2rem;
+          font-size: 1.1rem;
+          min-width: 140px;
+        }
+        .btn-primary {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border-color: #667eea;
+        }
+        .btn-primary:hover:not(:disabled) {
+          background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-outline {
+          background-color: transparent;
+          color: #667eea;
+          border-color: #667eea;
+        }
+        .btn-outline:hover:not(:disabled) {
+          background-color: #667eea;
+          color: white;
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        /* 表單操作區域 */
+        .form-actions {
+          display: flex;
+          gap: 1rem;
+          justify-content: center;
+          margin-top: 2rem;
+          padding-top: 1.5rem;
+          border-top: 2px solid #f1f5f9;
+        }
+
+        /* 表單卡片樣式 */
+        .form-card {
+          max-width: 800px;
+          margin: 0 auto;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+          border: 1px solid #e1e5e9;
+        }
+        .form-header {
+          text-align: center;
+          margin-bottom: 2rem;
+          padding-bottom: 1rem;
+          border-bottom: 2px solid #f1f5f9;
+        }
+        .form-header h3 {
+          color: #1f2937;
+          margin-bottom: 0.5rem;
+          font-size: 1.5rem;
+        }
+        .form-description {
+          color: #6b7280;
+          font-size: 1rem;
+          margin: 0;
+        }
+        .leave-form {
+          padding: 0;
+        }
+        .form-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.5rem;
+          margin-bottom: 1.5rem;
+        }
+        @media (max-width: 768px) {
+          .form-row {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+        }
+
+        /* 提交訊息樣式 */
+        .submit-message {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 1rem 1.5rem;
+          border-radius: 8px;
+          font-weight: 600;
+          margin-top: 1.5rem;
+          animation: slideIn 0.3s ease-out;
+        }
+        .submit-message.success {
+          background-color: #d1fae5;
+          color: #065f46;
+          border: 2px solid #10b981;
+        }
+        .submit-message.error {
+          background-color: #fee2e2;
+          color: #991b1b;
+          border: 2px solid #ef4444;
+        }
+        .message-icon {
+          font-size: 1.25rem;
+          font-weight: bold;
+        }
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* 欄位錯誤訊息樣式 */
+        .field-error {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-top: 0.5rem;
+          padding: 0.5rem 0.75rem;
+          background-color: #fef2f2;
+          border: 1px solid #fecaca;
+          border-radius: 6px;
+          color: #dc2626;
+          font-size: 0.875rem;
+          font-weight: 500;
+          animation: slideIn 0.2s ease-out;
+        }
+        .error-icon {
+          font-size: 1rem;
+          font-weight: bold;
+        }
+        .sortable-header {
+          cursor: pointer;
+          user-select: none;
+          position: relative;
+          padding-right: 20px;
+        }
+        .sortable-header:hover {
+          background-color: #f8f9fa;
+        }
+        .sortable-header::after {
+          content: "";
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+        }
+      `}</style>
     </div>
   );
 }

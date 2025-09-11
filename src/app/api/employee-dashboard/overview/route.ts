@@ -3,6 +3,7 @@ import {
   findEmployeeByEmail,
   getFirstEmployee,
   upsertDemoDataIfEmpty,
+  calculateUsedLeaveDays,
 } from "@/lib/sheets";
 
 export async function GET(request: Request) {
@@ -27,10 +28,20 @@ export async function GET(request: Request) {
       );
     }
 
+    // 計算員工今年已使用的假期天數
+    const usedLeave = await calculateUsedLeaveDays(emailParam);
+
+    // 計算剩餘假期：總假期 - 已使用假期
+    const totalAnnual = Number(employee.annualLeave || "0");
+    const totalSick = Number(employee.sickLeave || "0");
+
+    const remainingAnnual = Math.max(0, totalAnnual - usedLeave.annual);
+    const remainingSick = Math.max(0, totalSick - usedLeave.sick);
+
     return NextResponse.json({
       balance: {
-        annual: Number(employee.annualLeave || "0"),
-        sick: Number(employee.sickLeave || "0"),
+        annual: remainingAnnual,
+        sick: remainingSick,
       },
       profile: {
         name: employee.name,

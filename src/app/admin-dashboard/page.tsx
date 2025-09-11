@@ -68,10 +68,11 @@ export default function AdminDashboard() {
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedType, setSelectedType] = useState("");
 
   // 排序狀態
-  const [sortField, setSortField] = useState("");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [sortField, setSortField] = useState("createdAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // 載入使用者資訊
   useEffect(() => {
@@ -142,6 +143,7 @@ export default function AdminDashboard() {
       if (selectedYear) params.append("year", selectedYear);
       if (selectedMonth) params.append("month", selectedMonth);
       if (selectedStatus) params.append("status", selectedStatus);
+      if (selectedType) params.append("type", selectedType);
       if (sortField) {
         params.append("sortField", sortField);
         params.append("sortDirection", sortDirection);
@@ -173,6 +175,7 @@ export default function AdminDashboard() {
     selectedYear,
     selectedMonth,
     selectedStatus,
+    selectedType,
     sortField,
     sortDirection,
   ]);
@@ -263,6 +266,8 @@ export default function AdminDashboard() {
       setSelectedMonth(value);
     } else if (type === "status") {
       setSelectedStatus(value);
+    } else if (type === "type") {
+      setSelectedType(value);
     }
   };
 
@@ -276,6 +281,7 @@ export default function AdminDashboard() {
     setSelectedYear("");
     setSelectedMonth("");
     setSelectedStatus("");
+    setSelectedType("");
     setCurrentPage(1);
   };
 
@@ -604,6 +610,27 @@ export default function AdminDashboard() {
                       <option value="pending">待審核</option>
                       <option value="approved">已核准</option>
                       <option value="rejected">已拒絕</option>
+                    </select>
+                  </div>
+
+                  <div className="filter-group">
+                    <label htmlFor="type-filter">假別：</label>
+                    <select
+                      id="type-filter"
+                      value={selectedType}
+                      onChange={(e) =>
+                        handleFilterChange("type", e.target.value)
+                      }
+                    >
+                      <option value="">全部假別</option>
+                      <option value="特休">特休</option>
+                      <option value="補休">補休</option>
+                      <option value="事假">事假</option>
+                      <option value="病假">病假</option>
+                      <option value="喪假">喪假</option>
+                      <option value="育嬰假">育嬰假</option>
+                      <option value="產假">產假</option>
+                      <option value="婚假">婚假</option>
                     </select>
                   </div>
 

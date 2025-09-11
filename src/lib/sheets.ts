@@ -308,6 +308,36 @@ export async function addEmployee(
   return row;
 }
 
+export async function calculateUsedLeaveDays(
+  email: string,
+  year: number = new Date().getFullYear()
+): Promise<{ annual: number; sick: number }> {
+  const leaveHistory = await readLeaveHistoryByEmail(email);
+  const currentYear = year;
+
+  let usedAnnual = 0;
+  let usedSick = 0;
+
+  for (const request of leaveHistory) {
+    // 只計算已核准的請假申請
+    if (request.status !== "approved") continue;
+
+    // 檢查請假日期是否在指定年份
+    const requestDate = new Date(request.date);
+    if (requestDate.getFullYear() !== currentYear) continue;
+
+    const days = parseFloat(request.days || "0");
+
+    if (request.type === "特休") {
+      usedAnnual += days;
+    } else if (request.type === "病假") {
+      usedSick += days;
+    }
+  }
+
+  return { annual: usedAnnual, sick: usedSick };
+}
+
 export async function upsertDemoDataIfEmpty(): Promise<void> {
   // Optional helper: if sheets are empty, seed some demo rows so the UI won't be blank
   const empSheet = await getEmployeesSheet();

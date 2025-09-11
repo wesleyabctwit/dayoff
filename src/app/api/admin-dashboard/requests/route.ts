@@ -20,6 +20,7 @@ export async function GET(request: Request) {
     const year = url.searchParams.get("year");
     const month = url.searchParams.get("month");
     const status = url.searchParams.get("status");
+    const type = url.searchParams.get("type");
     const sortField = url.searchParams.get("sortField");
     const sortDirection = url.searchParams.get("sortDirection") as
       | "asc"
@@ -62,6 +63,11 @@ export async function GET(request: Request) {
       filteredRequests = filteredRequests.filter(
         (req) => req.status === status
       );
+    }
+
+    // 假別篩選
+    if (type) {
+      filteredRequests = filteredRequests.filter((req) => req.type === type);
     }
 
     // 排序

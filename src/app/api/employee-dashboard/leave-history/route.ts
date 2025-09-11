@@ -1,9 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  getFirstEmployee,
-  readLeaveHistoryByEmail,
-  LeaveRequestRow,
-} from "@/lib/sheets";
+import { readLeaveHistoryByEmail, LeaveRequestRow } from "@/lib/sheets";
 
 export async function GET(request: Request) {
   try {
@@ -49,8 +45,8 @@ export async function GET(request: Request) {
     // 排序功能
     if (sortField) {
       history.sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
+        let aValue: string | number;
+        let bValue: string | number;
 
         switch (sortField) {
           case "date":

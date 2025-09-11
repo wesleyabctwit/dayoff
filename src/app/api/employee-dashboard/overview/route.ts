@@ -1,9 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  findEmployeeByEmail,
-  getFirstEmployee,
-  calculateUsedLeaveDays,
-} from "@/lib/sheets";
+import { findEmployeeByEmail, calculateUsedLeaveDays } from "@/lib/sheets";
 
 export async function GET(request: Request) {
   try {

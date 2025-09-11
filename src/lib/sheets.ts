@@ -266,6 +266,9 @@ export async function addLeaveRequest(
 ): Promise<LeaveRequestRow> {
   const sheet = await getLeaveRequestsSheet();
 
+  // 載入表頭
+  await sheet.loadHeaderRow();
+
   // 確保表頭存在
   if (!sheet.headerValues || sheet.headerValues.length === 0) {
     await sheet.setHeaderRow(LEAVE_REQUESTS_HEADERS as string[]);

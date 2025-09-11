@@ -361,27 +361,16 @@ export default function EmployeeDashboard() {
                   {Object.entries(overview.leaveBalances).map(
                     ([leaveType, balance]) => (
                       <div key={leaveType} className="leave-balance-item">
-                        <div className="leave-type">{leaveType}</div>
-                        <div className="leave-details">
-                          <span className="remaining">{balance.remaining}</span>
-                          <span className="separator">/</span>
-                          <span className="total">{balance.total}</span>
-                          <span className="unit">天</span>
-                        </div>
-                        <div className="leave-progress">
-                          <div
-                            className="progress-bar"
-                            style={{
-                              width: `${
-                                balance.total > 0
-                                  ? (balance.used / balance.total) * 100
-                                  : 0
-                              }%`,
-                            }}
-                          ></div>
-                        </div>
-                        <div className="used-info">
-                          已使用 {balance.used} 天
+                        <div className="leave-balance-content">
+                          <div className="leave-type">{leaveType}</div>
+                          <div className="leave-details">
+                            <span className="remaining">
+                              {balance.remaining}
+                            </span>
+                            <span className="separator">/</span>
+                            <span className="total">{balance.total}</span>
+                            <span className="unit">天</span>
+                          </div>
                         </div>
                       </div>
                     )
@@ -392,12 +381,7 @@ export default function EmployeeDashboard() {
                 <div className="card-header">
                   <h3>個人資料</h3>
                   {!isEditingProfile && (
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={startEditingProfile}
-                    >
-                      編輯資料
-                    </button>
+                    <button onClick={startEditingProfile}>編輯資料</button>
                   )}
                 </div>
                 {!isEditingProfile ? (
@@ -1091,22 +1075,22 @@ export default function EmployeeDashboard() {
         }
         .leave-balance-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 1.5rem;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 1rem;
           margin-top: 1rem;
         }
         .leave-balance-item {
           background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
           border: 2px solid #dee2e6;
-          border-radius: 12px;
-          padding: 1.5rem;
+          border-radius: 8px;
+          padding: 1rem;
           transition: all 0.3s ease;
           position: relative;
           overflow: hidden;
         }
         .leave-balance-item:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
           border-color: #667eea;
         }
         .leave-balance-item::before {
@@ -1115,58 +1099,45 @@ export default function EmployeeDashboard() {
           top: 0;
           left: 0;
           right: 0;
-          height: 4px;
+          height: 3px;
           background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
         }
+        .leave-balance-content {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 0.5rem;
+        }
         .leave-type {
-          font-size: 1.1rem;
-          font-weight: 700;
+          font-size: 1rem;
+          font-weight: 600;
           color: #495057;
-          margin-bottom: 0.75rem;
+          white-space: nowrap;
         }
         .leave-details {
           display: flex;
           align-items: baseline;
-          margin-bottom: 1rem;
+          white-space: nowrap;
         }
         .remaining {
-          font-size: 2rem;
-          font-weight: 800;
+          font-size: 1.5rem;
+          font-weight: 700;
           color: #667eea;
         }
         .separator {
-          font-size: 1.5rem;
+          font-size: 1.2rem;
           color: #6c757d;
-          margin: 0 0.5rem;
+          margin: 0 0.25rem;
         }
         .total {
-          font-size: 1.5rem;
+          font-size: 1.2rem;
           font-weight: 600;
           color: #495057;
         }
         .unit {
-          font-size: 1rem;
-          color: #6c757d;
-          margin-left: 0.25rem;
-        }
-        .leave-progress {
-          width: 100%;
-          height: 8px;
-          background-color: #e9ecef;
-          border-radius: 4px;
-          overflow: hidden;
-          margin-bottom: 0.75rem;
-        }
-        .progress-bar {
-          height: 100%;
-          background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-          border-radius: 4px;
-          transition: width 0.3s ease;
-        }
-        .used-info {
           font-size: 0.9rem;
           color: #6c757d;
-          text-align: center;
+          margin-left: 0.25rem;
         }
         .card-header {
           display: flex;
@@ -1175,7 +1146,7 @@ export default function EmployeeDashboard() {
           margin-bottom: 1rem;
         }
         .btn-sm {
-          padding: 0.5rem 1rem;
+          padding: 0.5rem 0.75rem;
           font-size: 0.875rem;
         }
         .profile-form {

@@ -101,6 +101,12 @@ export default function AdminDashboard() {
   const [sortField, setSortField] = useState("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
+  // 員工編輯狀態
+  const [editingEmployee, setEditingEmployee] = useState<EmployeeItem | null>(
+    null
+  );
+  const [isEditMode, setIsEditMode] = useState(false);
+
   // 載入使用者資訊
   useEffect(() => {
     const storedUserName = localStorage.getItem("userName");
@@ -338,32 +344,64 @@ export default function AdminDashboard() {
 
   // 處理編輯員工
   const handleEditEmployee = (employee: EmployeeItem) => {
-    // 設定編輯模式並填入員工資料
+    setEditingEmployee(employee);
+    setIsEditMode(true);
     setTab("add-employee");
-    // 這裡可以設定表單的預設值
-    setTimeout(() => {
+  };
+
+  // 處理新增員工按鈕
+  const handleAddEmployee = () => {
+    setEditingEmployee(null);
+    setIsEditMode(false);
+    setTab("add-employee");
+  };
+
+  // 處理重置按鈕
+  const handleReset = () => {
+    if (isEditMode && editingEmployee) {
+      // 編輯模式：恢復到原始資料
       const form = document.querySelector(
         "#add-employee form"
       ) as HTMLFormElement;
       if (form) {
         (form.querySelector('[name="name"]') as HTMLInputElement).value =
-          employee.name;
+          editingEmployee.name;
         (form.querySelector('[name="email"]') as HTMLInputElement).value =
-          employee.email;
+          editingEmployee.email;
         (form.querySelector('[name="password"]') as HTMLInputElement).value =
-          employee.password;
+          editingEmployee.password;
         (form.querySelector('[name="hireDate"]') as HTMLInputElement).value =
-          employee.hireDate;
+          editingEmployee.hireDate;
         (form.querySelector('[name="department"]') as HTMLSelectElement).value =
-          employee.department;
+          editingEmployee.department;
         (form.querySelector('[name="特休"]') as HTMLInputElement).value =
-          employee.特休.toString();
+          editingEmployee.特休.toString();
         (form.querySelector('[name="補休"]') as HTMLInputElement).value =
-          employee.補休.toString();
+          editingEmployee.補休.toString();
+        (form.querySelector('[name="事假"]') as HTMLInputElement).value =
+          editingEmployee.事假.toString();
+        (form.querySelector('[name="病假"]') as HTMLInputElement).value =
+          editingEmployee.病假.toString();
+        (form.querySelector('[name="喪假"]') as HTMLInputElement).value =
+          editingEmployee.喪假.toString();
+        (form.querySelector('[name="育嬰假"]') as HTMLInputElement).value =
+          editingEmployee.育嬰假.toString();
+        (form.querySelector('[name="產假"]') as HTMLInputElement).value =
+          editingEmployee.產假.toString();
+        (form.querySelector('[name="婚假"]') as HTMLInputElement).value =
+          editingEmployee.婚假.toString();
         (form.querySelector('[name="notes"]') as HTMLTextAreaElement).value =
-          employee.notes;
+          editingEmployee.notes;
       }
-    }, 100);
+    } else {
+      // 新增模式：清空表單
+      const form = document.querySelector(
+        "#add-employee form"
+      ) as HTMLFormElement;
+      if (form) {
+        form.reset();
+      }
+    }
   };
 
   // 格式化日期時間
@@ -384,7 +422,10 @@ export default function AdminDashboard() {
 
   return (
     <div className="container">
-      <div className="dashboard">
+      <div
+        className="dashboard"
+        style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
+      >
         <div className="header">
           <h1>管理員儀表板</h1>
           <div className="user-info">
@@ -416,11 +457,25 @@ export default function AdminDashboard() {
             請假審核
           </button>
         </div>
-        <div className="content">
+        <div
+          className="content"
+          style={{ flex: 1, minHeight: "calc(100vh - 200px)" }}
+        >
           {error && (
             <div style={{ color: "red", marginBottom: 16 }}>{error}</div>
           )}
-          {loading && <div>載入中...</div>}
+          {loading && (
+            <div
+              style={{
+                minHeight: "400px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              載入中...
+            </div>
+          )}
           {/* 總覽頁面 */}
           {tab === "overview" && !!overview?.stats && !loading && (
             <div id="overview" className="tab-content">
@@ -522,7 +577,7 @@ export default function AdminDashboard() {
                   <h3>員工列表</h3>
                   <button
                     className="btn btn-success"
-                    onClick={() => setTab("add-employee")}
+                    onClick={handleAddEmployee}
                   >
                     新增員工
                   </button>
@@ -534,6 +589,7 @@ export default function AdminDashboard() {
                     <table>
                       <thead>
                         <tr>
+                          <th>操作</th>
                           <th
                             className="sortable-header"
                             onClick={() => handleSort("name")}
@@ -612,12 +668,19 @@ export default function AdminDashboard() {
                           >
                             備註 {getSortIcon("notes")}
                           </th>
-                          <th>操作</th>
                         </tr>
                       </thead>
                       <tbody>
                         {employees.map((emp: EmployeeItem, i) => (
                           <tr key={i}>
+                            <td>
+                              <button
+                                className="btn btn-primary btn-sm"
+                                onClick={() => handleEditEmployee(emp)}
+                              >
+                                編輯
+                              </button>
+                            </td>
                             <td>{emp.name}</td>
                             <td>{emp.email}</td>
                             <td>{emp.hireDate}</td>
@@ -647,14 +710,6 @@ export default function AdminDashboard() {
                               {emp.剩餘婚假}/{emp.婚假}
                             </td>
                             <td>{emp.notes}</td>
-                            <td>
-                              <button
-                                className="btn btn-primary btn-sm"
-                                onClick={() => handleEditEmployee(emp)}
-                              >
-                                編輯
-                              </button>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -910,11 +965,11 @@ export default function AdminDashboard() {
               </div>
             </div>
           )}
-          {/* 新增員工頁面 */}
+          {/* 新增/編輯員工頁面 */}
           {tab === "add-employee" && (
             <div id="add-employee" className="tab-content">
               <div className="card">
-                <h3>新增員工</h3>
+                <h3>{isEditMode ? "編輯員工" : "新增員工"}</h3>
                 <form onSubmit={addEmployee}>
                   <div className="form-row">
                     <div className="form-group">
@@ -933,7 +988,13 @@ export default function AdminDashboard() {
                         id="new-employee-email"
                         name="email"
                         required
+                        readOnly={isEditMode}
+                        className={isEditMode ? "readonly" : ""}
+                        defaultValue={isEditMode ? editingEmployee?.email : ""}
                       />
+                      {isEditMode && (
+                        <small className="form-help">Email 不可修改</small>
+                      )}
                     </div>
                   </div>
                   <div className="form-row">
@@ -1089,11 +1150,15 @@ export default function AdminDashboard() {
                     ></textarea>
                   </div>
                   <div className="form-actions">
-                    <button type="reset" className="btn btn-secondary">
-                      重置
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={handleReset}
+                    >
+                      {isEditMode ? "恢復原值" : "清空表單"}
                     </button>
-                    <button type="submit" className="btn btn-success">
-                      新增員工
+                    <button type="submit" className="btn btn-primary">
+                      {isEditMode ? "更新員工" : "新增員工"}
                     </button>
                   </div>
                 </form>
@@ -1327,6 +1392,103 @@ export default function AdminDashboard() {
           font-weight: 700;
           color: #667eea;
           font-size: 1.1rem;
+        }
+        .container {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 0 20px;
+        }
+        .dashboard {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+        }
+        .content {
+          flex: 1;
+          min-height: calc(100vh - 200px);
+        }
+        .tab-content {
+          min-height: 400px;
+        }
+        .card {
+          min-height: 200px;
+        }
+        .table-container {
+          min-height: 300px;
+          overflow-x: auto;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 1rem;
+          background-color: white;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        thead {
+          background-color: #f8f9fa;
+        }
+        th {
+          padding: 12px 16px;
+          text-align: left;
+          font-weight: 600;
+          color: #495057;
+          border-bottom: 2px solid #dee2e6;
+          white-space: nowrap;
+          font-size: 0.9rem;
+        }
+        td {
+          padding: 12px 16px;
+          border-bottom: 1px solid #dee2e6;
+          color: #495057;
+          font-size: 0.9rem;
+        }
+        tbody tr:hover {
+          background-color: #f8f9fa;
+        }
+        tbody tr:last-child td {
+          border-bottom: none;
+        }
+        .loading-container {
+          min-height: 400px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.2rem;
+          color: #666;
+        }
+        .form-help {
+          display: block;
+          margin-top: 0.25rem;
+          font-size: 0.8rem;
+          color: #6c757d;
+        }
+        .readonly {
+          background-color: #f8f9fa;
+          color: #6c757d;
+          cursor: not-allowed;
+        }
+        .btn-outline {
+          background-color: transparent;
+          color: #667eea;
+          border: 2px solid #667eea;
+        }
+        .btn-outline:hover:not(:disabled) {
+          background-color: #667eea;
+          color: white;
+        }
+        .btn-primary {
+          background-color: #667eea;
+          color: white;
+          border: 2px solid #667eea;
+        }
+        .btn-primary:hover:not(:disabled) {
+          background-color: #5a6fd8;
+          border-color: #5a6fd8;
         }
       `}</style>
     </div>

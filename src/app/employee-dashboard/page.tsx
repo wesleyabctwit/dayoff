@@ -315,7 +315,10 @@ export default function EmployeeDashboard() {
 
   return (
     <div className="container">
-      <div className="dashboard">
+      <div
+        className="dashboard"
+        style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
+      >
         <div className="header">
           <h1>員工儀表板</h1>
           <div className="user-info">
@@ -347,11 +350,25 @@ export default function EmployeeDashboard() {
             請假紀錄
           </button>
         </div>
-        <div className="content">
+        <div
+          className="content"
+          style={{ flex: 1, minHeight: "calc(100vh - 200px)" }}
+        >
           {error && (
             <div style={{ color: "red", marginBottom: 16 }}>{error}</div>
           )}
-          {loading && <div>載入中...</div>}
+          {loading && (
+            <div
+              style={{
+                minHeight: "400px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              載入中...
+            </div>
+          )}
           {/* 總覽頁面 */}
           {tab === "overview" && overview && !loading && (
             <div id="overview" className="tab-content">
@@ -1186,6 +1203,74 @@ export default function EmployeeDashboard() {
         .profile-message .message-icon {
           font-size: 1.25rem;
           font-weight: bold;
+        }
+        .container {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 0 20px;
+        }
+        .dashboard {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+        }
+        .content {
+          flex: 1;
+          min-height: calc(100vh - 200px);
+        }
+        .tab-content {
+          min-height: 400px;
+        }
+        .card {
+          min-height: 200px;
+        }
+        .table-container {
+          min-height: 300px;
+          overflow-x: auto;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 1rem;
+          background-color: white;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        thead {
+          background-color: #f8f9fa;
+        }
+        th {
+          padding: 12px 16px;
+          text-align: left;
+          font-weight: 600;
+          color: #495057;
+          border-bottom: 2px solid #dee2e6;
+          white-space: nowrap;
+          font-size: 0.9rem;
+        }
+        td {
+          padding: 12px 16px;
+          border-bottom: 1px solid #dee2e6;
+          color: #495057;
+          font-size: 0.9rem;
+        }
+        tbody tr:hover {
+          background-color: #f8f9fa;
+        }
+        tbody tr:last-child td {
+          border-bottom: none;
+        }
+        .loading-container {
+          min-height: 400px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.2rem;
+          color: #666;
         }
       `}</style>
     </div>

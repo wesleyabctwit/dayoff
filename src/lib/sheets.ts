@@ -8,9 +8,9 @@ import { JWT } from "google-auth-library";
 const SHEET_ID = process.env.GOOGLE_SHEET_ID as string;
 const SERVICE_ACCOUNT_EMAIL = process.env
   .GOOGLE_SERVICE_ACCOUNT_EMAIL as string;
-const SERVICE_ACCOUNT_PRIVATE_KEY = (
-  process.env.GOOGLE_PRIVATE_KEY || ""
-).replace(/\\n/g, "\n");
+const SERVICE_ACCOUNT_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY
+  ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
+  : "";
 
 export type EmployeeRow = {
   id: string;
@@ -115,18 +115,28 @@ async function getDoc(): Promise<GoogleSpreadsheet> {
       "Missing Google Sheets credentials. Please set GOOGLE_SHEET_ID, GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY"
     );
   }
-  const auth = new JWT({
-    email: SERVICE_ACCOUNT_EMAIL,
-    key: SERVICE_ACCOUNT_PRIVATE_KEY,
-    scopes: [
-      "https://www.googleapis.com/auth/spreadsheets",
-      "https://www.googleapis.com/auth/drive.file",
-    ],
-  });
-  const doc = new GoogleSpreadsheet(SHEET_ID, auth);
-  await doc.loadInfo();
-  cachedDoc = doc;
-  return doc;
+
+  try {
+    const auth = new JWT({
+      email: SERVICE_ACCOUNT_EMAIL,
+      key: SERVICE_ACCOUNT_PRIVATE_KEY,
+      scopes: [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive.file",
+      ],
+    });
+    const doc = new GoogleSpreadsheet(SHEET_ID, auth);
+    await doc.loadInfo();
+    cachedDoc = doc;
+    return doc;
+  } catch (error) {
+    console.error("Google Sheets authentication error:", error);
+    throw new Error(
+      `Google Sheets authentication failed: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
 }
 
 async function ensureSheet(

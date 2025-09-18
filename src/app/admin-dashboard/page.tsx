@@ -427,7 +427,7 @@ export default function AdminDashboard() {
         style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
       >
         <div className="header">
-          <h1>管理員儀表板</h1>
+          <h1>為你社區服務｜人員出勤系統｜管理後台</h1>
           <div className="user-info">
             <span>
               歡迎，<span id="user-name">{userName}</span>
@@ -826,7 +826,7 @@ export default function AdminDashboard() {
                             className="sortable-header"
                             onClick={() => handleSort("date")}
                           >
-                            日期 {getSortIcon("date")}
+                            請假日期 {getSortIcon("date")}
                           </th>
                           <th
                             className="sortable-header"

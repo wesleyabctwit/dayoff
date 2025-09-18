@@ -320,7 +320,7 @@ export default function EmployeeDashboard() {
         style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
       >
         <div className="header">
-          <h1>員工儀表板</h1>
+          <h1>為你社區服務｜人員出勤系統｜員工後台</h1>
           <div className="user-info">
             <span>
               歡迎，<span id="user-name">{userName}</span>

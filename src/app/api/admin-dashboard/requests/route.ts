@@ -5,8 +5,9 @@ import {
   LeaveRequestRow,
   EmployeeRow,
   updateLeaveRequestStatus,
-  findEmployeeByEmail,
   updateEmployeeRemainingDays,
+  getLeaveRequestById,
+  restoreEmployeeRemainingDays,
 } from "@/lib/sheets";
 // import { sendLeaveStatusUpdateEmail } from "@/lib/email";
 
@@ -150,13 +151,29 @@ export async function POST(request: Request) {
       );
     }
 
+    // 先取得舊狀態
+    const existing = await getLeaveRequestById(String(id));
+    if (!existing) {
+      return NextResponse.json({ message: "找不到該筆申請" }, { status: 404 });
+    }
+
     const updatedRequest = await updateLeaveRequestStatus(String(id), status);
 
     if (updatedRequest) {
-      // 如果審核通過，更新員工的剩餘天數
+      const usedDays = parseFloat(updatedRequest.days || "0");
+
+      // 從非已核准 -> 已核准：扣除天數
       if (status === "approved") {
-        const usedDays = parseFloat(updatedRequest.days || "0");
         await updateEmployeeRemainingDays(
+          updatedRequest.employee_email,
+          updatedRequest.type,
+          usedDays
+        );
+      }
+
+      // 從已核准 -> 非已核准：加回天數
+      if (existing.status === "approved" && status !== "approved") {
+        await restoreEmployeeRemainingDays(
           updatedRequest.employee_email,
           updatedRequest.type,
           usedDays

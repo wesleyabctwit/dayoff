@@ -331,6 +331,27 @@ export async function updateLeaveRequestStatus(
   return null;
 }
 
+export async function getLeaveRequestById(
+  id: string
+): Promise<LeaveRequestRow | null> {
+  const sheet = await getLeaveRequestsSheet();
+  const rows = await sheet.getRows<LeaveRequestRow>();
+  const row = rows.find((r) => safeGet(r, "id") === id);
+  if (!row) return null;
+  return {
+    id: safeGet(row, "id"),
+    employee_email: safeGet(row, "employee_email"),
+    date: safeGet(row, "date"),
+    period: safeGet(row, "period"),
+    type: safeGet(row, "type"),
+    days: safeGet(row, "days"),
+    reason: safeGet(row, "reason"),
+    status: safeGet(row, "status"),
+    created_at: safeGet(row, "created_at"),
+    updated_at: safeGet(row, "updated_at"),
+  };
+}
+
 export async function updateEmployeeRemainingDays(
   email: string,
   leaveType: string,
@@ -344,6 +365,52 @@ export async function updateEmployeeRemainingDays(
     const remainingField = `剩餘${leaveType}`;
     const currentRemaining = Number(safeGet(row, remainingField) || "0");
     const newRemaining = Math.max(0, currentRemaining - usedDays);
+
+    row.set(remainingField as keyof EmployeeRow, String(newRemaining));
+    await row.save();
+
+    return {
+      id: safeGet(row, "id"),
+      name: safeGet(row, "name"),
+      email: safeGet(row, "email"),
+      password: safeGet(row, "password"),
+      hireDate: safeGet(row, "hireDate"),
+      department: safeGet(row, "department"),
+      特休: safeGet(row, "特休"),
+      補休: safeGet(row, "補休"),
+      事假: safeGet(row, "事假"),
+      病假: safeGet(row, "病假"),
+      喪假: safeGet(row, "喪假"),
+      育嬰假: safeGet(row, "育嬰假"),
+      產假: safeGet(row, "產假"),
+      婚假: safeGet(row, "婚假"),
+      剩餘特休: safeGet(row, "剩餘特休"),
+      剩餘補休: safeGet(row, "剩餘補休"),
+      剩餘事假: safeGet(row, "剩餘事假"),
+      剩餘病假: safeGet(row, "剩餘病假"),
+      剩餘喪假: safeGet(row, "剩餘喪假"),
+      剩餘育嬰假: safeGet(row, "剩餘育嬰假"),
+      剩餘產假: safeGet(row, "剩餘產假"),
+      剩餘婚假: safeGet(row, "剩餘婚假"),
+      notes: safeGet(row, "notes"),
+    };
+  }
+  return null;
+}
+
+export async function restoreEmployeeRemainingDays(
+  email: string,
+  leaveType: string,
+  restoredDays: number
+): Promise<EmployeeRow | null> {
+  const sheet = await getEmployeesSheet();
+  const rows = await sheet.getRows<EmployeeRow>();
+  const row = rows.find((r) => safeGet(r, "email") === email);
+
+  if (row) {
+    const remainingField = `剩餘${leaveType}`;
+    const currentRemaining = Number(safeGet(row, remainingField) || "0");
+    const newRemaining = currentRemaining + Math.max(0, restoredDays);
 
     row.set(remainingField as keyof EmployeeRow, String(newRemaining));
     await row.save();

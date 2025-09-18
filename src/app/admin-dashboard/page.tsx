@@ -265,6 +265,41 @@ export default function AdminDashboard() {
     }
   };
 
+  // 重新載入目前的請假清單（依目前的篩選、排序、分頁）
+  const refreshRequests = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: "10",
+      });
+      if (selectedYear) params.append("year", selectedYear);
+      if (selectedMonth) params.append("month", selectedMonth);
+      if (selectedStatus) params.append("status", selectedStatus);
+      if (selectedType) params.append("type", selectedType);
+      if (sortField) {
+        params.append("sortField", sortField);
+        params.append("sortDirection", sortDirection);
+      }
+
+      const res = await fetch(
+        `/api/admin-dashboard/requests?${params.toString()}`
+      );
+      if (!res.ok) throw new Error("載入失敗");
+      const data: { requests: RequestItem[]; pagination: PaginationInfo } =
+        await res.json();
+      setRequests(Array.isArray(data?.requests) ? data.requests : []);
+      setPagination(data.pagination || null);
+    } catch {
+      setRequests([]);
+      setPagination(null);
+      setError("載入失敗");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 處理請假狀態變更
   const handleStatusChange = async (id: number, newStatus: string) => {
     const originalRequests = [...requests];
@@ -288,6 +323,9 @@ export default function AdminDashboard() {
       if (!result.success) {
         throw new Error(result.message || "更新失敗");
       }
+
+      // 後端更新成功後，重新載入整個清單以取得正確的剩餘天數
+      await refreshRequests();
     } catch (error) {
       setRequests(originalRequests);
       const message =
@@ -724,6 +762,9 @@ export default function AdminDashboard() {
             <div id="requests" className="tab-content">
               <div className="card">
                 <h3>請假申請管理</h3>
+                <p className="hint-text">
+                  提示：當申請從「已核准」改為「待審核」或「已拒絕」時，系統會自動將先前扣除的天數加回；從非「已核准」改為「已核准」時會扣除天數。
+                </p>
 
                 {/* 篩選控制項 */}
                 <div className="filter-controls">
@@ -1489,6 +1530,15 @@ export default function AdminDashboard() {
         .btn-primary:hover:not(:disabled) {
           background-color: #5a6fd8;
           border-color: #5a6fd8;
+        }
+        .hint-text {
+          font-size: 0.9rem;
+          color: #6c757d;
+          margin-bottom: 1.5rem;
+          padding: 0.75rem 1rem;
+          background-color: #f8f9fa;
+          border-radius: 8px;
+          border: 1px solid #e9ecef;
         }
       `}</style>
     </div>

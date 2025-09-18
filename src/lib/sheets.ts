@@ -483,12 +483,40 @@ export async function updateEmployee(
   const row = rows.find((r) => safeGet(r, "email") === email);
 
   if (row) {
-    // 更新允許修改的欄位
-    if (updates.name) row.set("name", updates.name);
-    if (updates.password) row.set("password", updates.password);
-    if (updates.hireDate) row.set("hireDate", updates.hireDate);
-    if (updates.department) row.set("department", updates.department);
-    if (updates.notes) row.set("notes", updates.notes);
+    // 動態更新允許修改的欄位（除了 id 與 email）
+    const allowedKeys: Array<keyof EmployeeRow> = [
+      "name",
+      "password",
+      "hireDate",
+      "department",
+      "特休",
+      "補休",
+      "事假",
+      "病假",
+      "喪假",
+      "育嬰假",
+      "產假",
+      "婚假",
+      "剩餘特休",
+      "剩餘補休",
+      "剩餘事假",
+      "剩餘病假",
+      "剩餘喪假",
+      "剩餘育嬰假",
+      "剩餘產假",
+      "剩餘婚假",
+      "notes",
+    ];
+
+    for (const key of allowedKeys) {
+      const value = (updates as Record<string, unknown>)[key as string];
+      if (value !== undefined) {
+        (row as unknown as { set: (k: string, v: string) => void }).set(
+          key as string,
+          String(value)
+        );
+      }
+    }
 
     await row.save();
 

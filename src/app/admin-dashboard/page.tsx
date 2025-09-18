@@ -1469,6 +1469,7 @@ export default function AdminDashboard() {
                         id="new-employee-name"
                         name="name"
                         required
+                        defaultValue={isEditMode ? editingEmployee?.name : ""}
                       />
                     </div>
                     <div className="form-group">
@@ -1495,6 +1496,9 @@ export default function AdminDashboard() {
                         id="new-employee-password"
                         name="password"
                         required
+                        defaultValue={
+                          isEditMode ? editingEmployee?.password : ""
+                        }
                       />
                     </div>
                     <div className="form-group">
@@ -1504,6 +1508,9 @@ export default function AdminDashboard() {
                         id="new-employee-hire-date"
                         name="hireDate"
                         required
+                        defaultValue={
+                          isEditMode ? editingEmployee?.hireDate : ""
+                        }
                       />
                     </div>
                   </div>
@@ -1514,6 +1521,9 @@ export default function AdminDashboard() {
                         id="new-employee-department"
                         name="department"
                         required
+                        defaultValue={
+                          isEditMode ? editingEmployee?.department : ""
+                        }
                       >
                         <option value="">請選擇部門</option>
                         <option value="技術部">技術部</option>
@@ -1530,9 +1540,145 @@ export default function AdminDashboard() {
                         name="特休"
                         min={0}
                         max={30}
-                        defaultValue={14}
+                        defaultValue={
+                          isEditMode ? Number(editingEmployee?.特休 || 0) : 14
+                        }
                         required
                       />
+                    </div>
+                  </div>
+                  {/* 剩餘天數編輯 */}
+                  <div className="form-section">
+                    <h4>剩餘天數</h4>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="new-employee-剩餘特休">剩餘特休</label>
+                        <input
+                          type="number"
+                          id="new-employee-剩餘特休"
+                          name="剩餘特休"
+                          min={0}
+                          max={365}
+                          defaultValue={
+                            isEditMode
+                              ? Number(editingEmployee?.剩餘特休 || 0)
+                              : 0
+                          }
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="new-employee-剩餘補休">剩餘補休</label>
+                        <input
+                          type="number"
+                          id="new-employee-剩餘補休"
+                          name="剩餘補休"
+                          min={0}
+                          max={365}
+                          defaultValue={
+                            isEditMode
+                              ? Number(editingEmployee?.剩餘補休 || 0)
+                              : 0
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="new-employee-剩餘事假">剩餘事假</label>
+                        <input
+                          type="number"
+                          id="new-employee-剩餘事假"
+                          name="剩餘事假"
+                          min={0}
+                          max={365}
+                          defaultValue={
+                            isEditMode
+                              ? Number(editingEmployee?.剩餘事假 || 0)
+                              : 0
+                          }
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="new-employee-剩餘病假">剩餘病假</label>
+                        <input
+                          type="number"
+                          id="new-employee-剩餘病假"
+                          name="剩餘病假"
+                          min={0}
+                          max={365}
+                          defaultValue={
+                            isEditMode
+                              ? Number(editingEmployee?.剩餘病假 || 0)
+                              : 0
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="new-employee-剩餘喪假">剩餘喪假</label>
+                        <input
+                          type="number"
+                          id="new-employee-剩餘喪假"
+                          name="剩餘喪假"
+                          min={0}
+                          max={365}
+                          defaultValue={
+                            isEditMode
+                              ? Number(editingEmployee?.剩餘喪假 || 0)
+                              : 0
+                          }
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="new-employee-剩餘育嬰假">
+                          剩餘育嬰假
+                        </label>
+                        <input
+                          type="number"
+                          id="new-employee-剩餘育嬰假"
+                          name="剩餘育嬰假"
+                          min={0}
+                          max={365}
+                          defaultValue={
+                            isEditMode
+                              ? Number(editingEmployee?.剩餘育嬰假 || 0)
+                              : 0
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="new-employee-剩餘產假">剩餘產假</label>
+                        <input
+                          type="number"
+                          id="new-employee-剩餘產假"
+                          name="剩餘產假"
+                          min={0}
+                          max={365}
+                          defaultValue={
+                            isEditMode
+                              ? Number(editingEmployee?.剩餘產假 || 0)
+                              : 0
+                          }
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="new-employee-剩餘婚假">剩餘婚假</label>
+                        <input
+                          type="number"
+                          id="new-employee-剩餘婚假"
+                          name="剩餘婚假"
+                          min={0}
+                          max={365}
+                          defaultValue={
+                            isEditMode
+                              ? Number(editingEmployee?.剩餘婚假 || 0)
+                              : 0
+                          }
+                        />
+                      </div>
                     </div>
                   </div>
                   <div className="form-section">
@@ -1546,7 +1692,9 @@ export default function AdminDashboard() {
                           name="補休"
                           min={0}
                           max={30}
-                          defaultValue={0}
+                          defaultValue={
+                            isEditMode ? Number(editingEmployee?.補休 || 0) : 0
+                          }
                           required
                         />
                       </div>
@@ -1558,7 +1706,9 @@ export default function AdminDashboard() {
                           name="事假"
                           min={0}
                           max={30}
-                          defaultValue={7}
+                          defaultValue={
+                            isEditMode ? Number(editingEmployee?.事假 || 0) : 7
+                          }
                           required
                         />
                       </div>
@@ -1572,7 +1722,9 @@ export default function AdminDashboard() {
                           name="病假"
                           min={0}
                           max={30}
-                          defaultValue={5}
+                          defaultValue={
+                            isEditMode ? Number(editingEmployee?.病假 || 0) : 5
+                          }
                           required
                         />
                       </div>
@@ -1584,7 +1736,9 @@ export default function AdminDashboard() {
                           name="喪假"
                           min={0}
                           max={30}
-                          defaultValue={3}
+                          defaultValue={
+                            isEditMode ? Number(editingEmployee?.喪假 || 0) : 3
+                          }
                           required
                         />
                       </div>
@@ -1598,7 +1752,11 @@ export default function AdminDashboard() {
                           name="育嬰假"
                           min={0}
                           max={30}
-                          defaultValue={0}
+                          defaultValue={
+                            isEditMode
+                              ? Number(editingEmployee?.育嬰假 || 0)
+                              : 0
+                          }
                           required
                         />
                       </div>
@@ -1610,7 +1768,9 @@ export default function AdminDashboard() {
                           name="產假"
                           min={0}
                           max={30}
-                          defaultValue={0}
+                          defaultValue={
+                            isEditMode ? Number(editingEmployee?.產假 || 0) : 0
+                          }
                           required
                         />
                       </div>
@@ -1624,7 +1784,9 @@ export default function AdminDashboard() {
                           name="婚假"
                           min={0}
                           max={30}
-                          defaultValue={3}
+                          defaultValue={
+                            isEditMode ? Number(editingEmployee?.婚假 || 0) : 3
+                          }
                           required
                         />
                       </div>
@@ -1637,6 +1799,7 @@ export default function AdminDashboard() {
                       id="new-employee-notes"
                       name="notes"
                       placeholder="其他備註事項..."
+                      defaultValue={isEditMode ? editingEmployee?.notes : ""}
                     ></textarea>
                   </div>
                   <div className="form-actions">

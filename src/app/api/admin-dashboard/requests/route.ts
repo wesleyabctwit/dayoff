@@ -8,7 +8,7 @@ import {
   findEmployeeByEmail,
   updateEmployeeRemainingDays,
 } from "@/lib/sheets";
-import { sendLeaveStatusUpdateEmail } from "@/lib/email";
+// import { sendLeaveStatusUpdateEmail } from "@/lib/email";
 
 export async function GET(request: Request) {
   try {
@@ -163,10 +163,10 @@ export async function POST(request: Request) {
         );
       }
 
-      const employee = await findEmployeeByEmail(updatedRequest.employee_email);
-      if (employee) {
-        await sendLeaveStatusUpdateEmail(updatedRequest, employee);
-      }
+      // const employee = await findEmployeeByEmail(updatedRequest.employee_email);
+      // if (employee) {
+      //   await sendLeaveStatusUpdateEmail(updatedRequest, employee);
+      // }
 
       return NextResponse.json({
         success: true,

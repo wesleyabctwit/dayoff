@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { addLeaveRequest, findEmployeeByEmail } from "@/lib/sheets";
-import { sendLeaveRequestEmail } from "@/lib/email";
+// import { sendLeaveRequestEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
@@ -41,13 +41,13 @@ export async function POST(request: Request) {
       status: "pending",
     });
 
-    // 寄送郵件通知（失敗時不影響假單提交）
-    try {
-      await sendLeaveRequestEmail(newRequest, employee);
-    } catch (emailError) {
-      console.error("郵件發送失敗，但假單已成功提交:", emailError);
-      // 郵件發送失敗不影響假單提交的成功
-    }
+    // // 寄送郵件通知（失敗時不影響假單提交）
+    // try {
+    //   await sendLeaveRequestEmail(newRequest, employee);
+    // } catch (emailError) {
+    //   console.error("郵件發送失敗，但假單已成功提交:", emailError);
+    //   // 郵件發送失敗不影響假單提交的成功
+    // }
 
     return NextResponse.json({ success: true });
   } catch (err: unknown) {

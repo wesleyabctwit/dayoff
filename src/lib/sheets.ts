@@ -53,6 +53,17 @@ export type LeaveRequestRow = {
   updated_at?: string;
 };
 
+export type OvertimeActivityRow = {
+  id: string;
+  name: string; // 活動名稱
+  date: string; // 活動日期
+  hours: string; // 補休時數
+  participants: string; // 參與員工 email，用逗號分隔
+  description?: string; // 活動描述
+  created_at?: string;
+  updated_at?: string;
+};
+
 const EMPLOYEES_SHEET_TITLE = "employees";
 const EMPLOYEES_HEADERS: Array<keyof EmployeeRow> = [
   "id",
@@ -92,6 +103,18 @@ const LEAVE_REQUESTS_HEADERS: Array<keyof LeaveRequestRow> = [
   "days",
   "reason",
   "status",
+  "created_at",
+  "updated_at",
+];
+
+const OVERTIME_ACTIVITIES_SHEET_TITLE = "overtime_activities";
+const OVERTIME_ACTIVITIES_HEADERS: Array<keyof OvertimeActivityRow> = [
+  "id",
+  "name",
+  "date",
+  "hours",
+  "participants",
+  "description",
   "created_at",
   "updated_at",
 ];
@@ -158,6 +181,13 @@ async function getLeaveRequestsSheet(): Promise<GoogleSpreadsheetWorksheet> {
   return ensureSheet(
     LEAVE_REQUESTS_SHEET_TITLE,
     LEAVE_REQUESTS_HEADERS as string[]
+  );
+}
+
+async function getOvertimeActivitiesSheet(): Promise<GoogleSpreadsheetWorksheet> {
+  return ensureSheet(
+    OVERTIME_ACTIVITIES_SHEET_TITLE,
+    OVERTIME_ACTIVITIES_HEADERS as string[]
   );
 }
 
@@ -585,4 +615,173 @@ export async function calculateUsedLeaveDays(
   }
 
   return usedDays;
+}
+
+// 讀取所有活動加班記錄
+export async function readOvertimeActivities(): Promise<OvertimeActivityRow[]> {
+  const sheet = await getOvertimeActivitiesSheet();
+
+  // 載入表頭
+  await sheet.loadHeaderRow();
+
+  // 確保表頭存在
+  if (!sheet.headerValues || sheet.headerValues.length === 0) {
+    await sheet.setHeaderRow(OVERTIME_ACTIVITIES_HEADERS as string[]);
+    return []; // 沒有資料時回傳空陣列
+  }
+
+  const rows = await sheet.getRows<OvertimeActivityRow>();
+  return rows.map((r) => ({
+    id: safeGet(r, "id"),
+    name: safeGet(r, "name"),
+    date: safeGet(r, "date"),
+    hours: safeGet(r, "hours"),
+    participants: safeGet(r, "participants"),
+    description: safeGet(r, "description"),
+    created_at: safeGet(r, "created_at"),
+    updated_at: safeGet(r, "updated_at"),
+  }));
+}
+
+// 根據 ID 取得活動加班記錄
+export async function getOvertimeActivityById(
+  id: string
+): Promise<OvertimeActivityRow | null> {
+  const sheet = await getOvertimeActivitiesSheet();
+  const rows = await sheet.getRows<OvertimeActivityRow>();
+  const row = rows.find((r) => safeGet(r, "id") === id);
+  if (!row) return null;
+  return {
+    id: safeGet(row, "id"),
+    name: safeGet(row, "name"),
+    date: safeGet(row, "date"),
+    hours: safeGet(row, "hours"),
+    participants: safeGet(row, "participants"),
+    description: safeGet(row, "description"),
+    created_at: safeGet(row, "created_at"),
+    updated_at: safeGet(row, "updated_at"),
+  };
+}
+
+// 新增活動加班記錄
+export async function addOvertimeActivity(
+  partial: Omit<OvertimeActivityRow, "id" | "created_at" | "updated_at">
+): Promise<OvertimeActivityRow> {
+  const sheet = await getOvertimeActivitiesSheet();
+
+  // 載入表頭
+  await sheet.loadHeaderRow();
+
+  // 確保表頭存在
+  if (!sheet.headerValues || sheet.headerValues.length === 0) {
+    await sheet.setHeaderRow(OVERTIME_ACTIVITIES_HEADERS as string[]);
+  }
+
+  const rows = await sheet.getRows<OvertimeActivityRow>();
+  let maxId = 0;
+  for (const r of rows) {
+    const idStr = safeGet(r as unknown as GoogleSpreadsheetRow, "id");
+    const id = parseInt(idStr || "0", 10);
+    if (!Number.isNaN(id)) maxId = Math.max(maxId, id);
+  }
+  const newId = maxId + 1;
+
+  const nowIso = new Date().toISOString();
+  const row: OvertimeActivityRow = {
+    id: String(newId),
+    name: partial.name,
+    date: partial.date,
+    hours: partial.hours,
+    participants: partial.participants,
+    description: partial.description || "",
+    created_at: nowIso,
+    updated_at: "",
+  };
+  await sheet.addRow(row as unknown as Record<string, string>);
+  return row;
+}
+
+// 更新活動加班記錄
+export async function updateOvertimeActivity(
+  id: string,
+  updates: Partial<Omit<OvertimeActivityRow, "id" | "created_at">>
+): Promise<OvertimeActivityRow | null> {
+  const sheet = await getOvertimeActivitiesSheet();
+  const rows = await sheet.getRows<OvertimeActivityRow>();
+  const row = rows.find((r) => safeGet(r, "id") === id);
+
+  if (row) {
+    if (updates.name !== undefined) row.set("name", updates.name);
+    if (updates.date !== undefined) row.set("date", updates.date);
+    if (updates.hours !== undefined) row.set("hours", updates.hours);
+    if (updates.participants !== undefined)
+      row.set("participants", updates.participants);
+    if (updates.description !== undefined)
+      row.set("description", updates.description);
+    row.set("updated_at", new Date().toISOString());
+    await row.save();
+
+    return {
+      id: safeGet(row, "id"),
+      name: safeGet(row, "name"),
+      date: safeGet(row, "date"),
+      hours: safeGet(row, "hours"),
+      participants: safeGet(row, "participants"),
+      description: safeGet(row, "description"),
+      created_at: safeGet(row, "created_at"),
+      updated_at: safeGet(row, "updated_at"),
+    };
+  }
+  return null;
+}
+
+// 刪除活動加班記錄
+export async function deleteOvertimeActivity(id: string): Promise<boolean> {
+  const sheet = await getOvertimeActivitiesSheet();
+  const rows = await sheet.getRows<OvertimeActivityRow>();
+  const row = rows.find((r) => safeGet(r, "id") === id);
+
+  if (row) {
+    await row.delete();
+    return true;
+  }
+  return false;
+}
+
+// 為多個員工增加剩餘補休時數
+export async function addCompensatoryHoursToEmployees(
+  emails: string[],
+  hours: number
+): Promise<void> {
+  const sheet = await getEmployeesSheet();
+  const rows = await sheet.getRows<EmployeeRow>();
+
+  for (const email of emails) {
+    const row = rows.find((r) => safeGet(r, "email") === email);
+    if (row) {
+      const currentRemaining = Number(safeGet(row, "剩餘補休") || "0");
+      const newRemaining = currentRemaining + hours;
+      row.set("剩餘補休", String(newRemaining));
+      await row.save();
+    }
+  }
+}
+
+// 為多個員工減少剩餘補休時數
+export async function subtractCompensatoryHoursFromEmployees(
+  emails: string[],
+  hours: number
+): Promise<void> {
+  const sheet = await getEmployeesSheet();
+  const rows = await sheet.getRows<EmployeeRow>();
+
+  for (const email of emails) {
+    const row = rows.find((r) => safeGet(r, "email") === email);
+    if (row) {
+      const currentRemaining = Number(safeGet(row, "剩餘補休") || "0");
+      const newRemaining = Math.max(0, currentRemaining - hours);
+      row.set("剩餘補休", String(newRemaining));
+      await row.save();
+    }
+  }
 }

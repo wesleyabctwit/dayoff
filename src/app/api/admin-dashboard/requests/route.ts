@@ -16,15 +16,24 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const page = parseInt(url.searchParams.get("page") || "1");
     const limit = parseInt(url.searchParams.get("limit") || "10");
-    const year = url.searchParams.get("year");
+    let year = url.searchParams.get("year");
     const month = url.searchParams.get("month");
     const status = url.searchParams.get("status");
     const type = url.searchParams.get("type");
-    const sortField = url.searchParams.get("sortField");
-    const sortDirection = url.searchParams.get("sortDirection") as
+    let sortField = url.searchParams.get("sortField");
+    let sortDirection = url.searchParams.get("sortDirection") as
       | "asc"
       | "desc"
       | null;
+
+    // 預設排序：依申請時間 (createdAt) 降冪
+    if (!sortField) sortField = "createdAt";
+    if (!sortDirection) sortDirection = "desc";
+
+    // 預設年份：當年度（若前端未指定 year/month）
+    if (!year && !month) {
+      year = String(new Date().getFullYear());
+    }
 
     const [requests, employees] = await Promise.all([
       readLeaveRequests(),

@@ -89,20 +89,7 @@ const AddEditEmployeeForm: React.FC<AddEditEmployeeFormProps> = ({
                 <option value="財務部">財務部</option>
               </select>
             </div>
-            <div className="form-group">
-              <label htmlFor="new-employee-特休">特休天數</label>
-              <input
-                type="number"
-                id="new-employee-特休"
-                name="特休"
-                min={0}
-                max={30}
-                defaultValue={
-                  isEditMode ? Number(editingEmployee?.特休 || 0) : 14
-                }
-                required
-              />
-            </div>
+            <div className="form-group">{/* 空白欄位保持對齊 */}</div>
           </div>
 
           <div className="form-section-two-cols">
@@ -226,6 +213,20 @@ const AddEditEmployeeForm: React.FC<AddEditEmployeeFormProps> = ({
               <h4>假期天數設定</h4>
               <div className="form-row">
                 <div className="form-group">
+                  <label htmlFor="new-employee-特休">特休天數</label>
+                  <input
+                    type="number"
+                    id="new-employee-特休"
+                    name="特休"
+                    min={0}
+                    max={30}
+                    defaultValue={
+                      isEditMode ? Number(editingEmployee?.特休 || 0) : 14
+                    }
+                    required
+                  />
+                </div>
+                <div className="form-group">
                   <label htmlFor="new-employee-補休">補休天數</label>
                   <input
                     type="number"
@@ -239,6 +240,8 @@ const AddEditEmployeeForm: React.FC<AddEditEmployeeFormProps> = ({
                     required
                   />
                 </div>
+              </div>
+              <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="new-employee-事假">事假天數</label>
                   <input
@@ -253,8 +256,6 @@ const AddEditEmployeeForm: React.FC<AddEditEmployeeFormProps> = ({
                     required
                   />
                 </div>
-              </div>
-              <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="new-employee-病假">病假天數</label>
                   <input
@@ -269,6 +270,8 @@ const AddEditEmployeeForm: React.FC<AddEditEmployeeFormProps> = ({
                     required
                   />
                 </div>
+              </div>
+              <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="new-employee-喪假">喪假天數</label>
                   <input
@@ -283,8 +286,6 @@ const AddEditEmployeeForm: React.FC<AddEditEmployeeFormProps> = ({
                     required
                   />
                 </div>
-              </div>
-              <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="new-employee-育嬰假">育嬰假天數</label>
                   <input
@@ -299,6 +300,8 @@ const AddEditEmployeeForm: React.FC<AddEditEmployeeFormProps> = ({
                     required
                   />
                 </div>
+              </div>
+              <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="new-employee-產假">產假天數</label>
                   <input
@@ -313,8 +316,6 @@ const AddEditEmployeeForm: React.FC<AddEditEmployeeFormProps> = ({
                     required
                   />
                 </div>
-              </div>
-              <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="new-employee-婚假">婚假天數</label>
                   <input
@@ -329,7 +330,6 @@ const AddEditEmployeeForm: React.FC<AddEditEmployeeFormProps> = ({
                     required
                   />
                 </div>
-                <div className="form-group">{/* 空白欄位保持對齊 */}</div>
               </div>
             </div>
           </div>

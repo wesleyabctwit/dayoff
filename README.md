@@ -56,14 +56,14 @@ npm run init-sheets
 
 #### 管理員帳號
 
-- **Email**: `admin@company.com`
-- **密碼**: `admin123`
+- **Email**: `wesleyabctw.it@gmail.com`
+- **密碼**: `admin1234`
 - **權限**: 完整管理權限
 
 #### 員工帳號
 
-- **張小明**: `ming@company.com` / `123456`
-- **李小華**: `hua@company.com` / `123456`
+- **張小明**: `ming@company.com` / `12341234`
+- **李小華**: `jackbigapple@gmail.com` / `12341234`
 
 ### 新增員工
 

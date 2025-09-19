@@ -16,13 +16,13 @@ export async function POST(request: Request) {
     }
 
     // 檢查是否為管理員帳號
-    if (email === "admin@company.com") {
-      if (password === "admin123") {
+    if (email === "wesleyabctw.it@gmail.com") {
+      if (password === "admin1234") {
         return NextResponse.json({
           success: true,
           role: "admin",
           name: "管理員",
-          email: "admin@company.com",
+          email: "wesleyabctw.it@gmail.com",
         });
       } else {
         return NextResponse.json(

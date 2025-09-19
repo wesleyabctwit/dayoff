@@ -414,7 +414,7 @@ const OvertimeManagementTab: React.FC<OvertimeManagementTabProps> = ({
                   <tr key={activity.id}>
                     <td>{activity.name}</td>
                     <td>{activity.date}</td>
-                    <td>{activity.hours} 小時</td>
+                    <td>{activity.hours} 天</td>
                     <td>{activity.participantNames}</td>
                     <td>{activity.description || "-"}</td>
                     <td>{formatDateTime(activity.created_at)}</td>

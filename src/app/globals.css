@@ -11,9 +11,27 @@ body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* 登入頁面的 body 樣式 */
+body:has(.login-container) {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* 登入頁面容器 */
+.login-page-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
 }
 
 .container {
@@ -31,6 +49,24 @@ body {
   padding: 40px;
   max-width: 500px;
   margin: 0 auto;
+  width: 100%;
+}
+
+/* 登入頁面響應式設計 */
+@media (max-width: 768px) {
+  .login-container {
+    padding: 30px 20px;
+    margin: 20px;
+    max-width: none;
+  }
+
+  .logo h1 {
+    font-size: 2rem;
+  }
+
+  .logo p {
+    font-size: 1rem;
+  }
 }
 
 .logo {
@@ -187,6 +223,24 @@ body {
 .login-container .btn-primary {
   width: 100%;
   padding: 15px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-container .btn-primary:hover:not(:disabled) {
+  background: #5a6fd8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.login-container .btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* 儀表板樣式 */
@@ -627,7 +681,7 @@ th {
 }
 
 /* 覆蓋原有的 container 和 dashboard 樣式 */
-.container {
+.dashboard .container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;

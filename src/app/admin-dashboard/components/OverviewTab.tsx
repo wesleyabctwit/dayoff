@@ -1,35 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { OverviewResponse, OverviewActivity } from "../types";
-
-// 從 page.tsx 複製過來的類型定義
-type OverviewStats = {
-  totalEmployees: number;
-  pendingRequests: number;
-  leavesThisMonth: number;
-  annualLeaveUsage: string;
-  monthlyLeaveStats: {
-    特休: number;
-    補休: number;
-    事假: number;
-    病假: number;
-    喪假: number;
-    育嬰假: number;
-    產假: number;
-    婚假: number;
-  };
-};
-
-type OverviewActivity = {
-  time: string;
-  employee: string;
-  action: string;
-  status: "pending" | "approved" | "rejected" | string;
-};
-
-type OverviewResponse = {
-  stats: OverviewStats;
-  activities: OverviewActivity[];
-};
 
 interface OverviewTabProps {
   overview: OverviewResponse | null;

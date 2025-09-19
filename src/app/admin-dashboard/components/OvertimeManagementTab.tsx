@@ -187,7 +187,7 @@ const OvertimeManagementTab: React.FC<OvertimeManagementTabProps> = ({
 
   // 處理刪除活動
   const handleDeleteOvertimeActivity = async (id: string) => {
-    if (!confirm("確定要刪除此活動嗎？這將會從參與員工扣回相應的補休時數。")) {
+    if (!confirm("確定要刪除此活動嗎？這將會從參與員工扣回相應的補休天數。")) {
       return;
     }
 
@@ -272,7 +272,7 @@ const OvertimeManagementTab: React.FC<OvertimeManagementTabProps> = ({
                   <input type="date" id="activity-date" name="date" required />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="activity-hours">補休時數</label>
+                  <label htmlFor="activity-hours">補休天數</label>
                   <input
                     type="number"
                     id="activity-hours"
@@ -402,7 +402,7 @@ const OvertimeManagementTab: React.FC<OvertimeManagementTabProps> = ({
                 <tr>
                   <th>活動名稱</th>
                   <th>活動日期</th>
-                  <th>補休時數</th>
+                  <th>補休天數</th>
                   <th>參與員工</th>
                   <th>活動描述</th>
                   <th>建立時間</th>

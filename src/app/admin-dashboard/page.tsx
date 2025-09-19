@@ -565,7 +565,7 @@ export default function AdminDashboard() {
 
   // 處理刪除活動
   const handleDeleteOvertimeActivity = async (id: string) => {
-    if (!confirm("確定要刪除此活動嗎？這將會從參與員工扣回相應的補休時數。")) {
+    if (!confirm("確定要刪除此活動嗎？這將會從參與員工扣回相應的補休天數。")) {
       return;
     }
 

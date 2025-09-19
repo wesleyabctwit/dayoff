@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     const hoursNum = parseFloat(hours);
     if (isNaN(hoursNum) || hoursNum <= 0) {
       return NextResponse.json(
-        { success: false, message: "補休時數必須為正數" },
+        { success: false, message: "補休天數必須為正數" },
         { status: 400 }
       );
     }
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
       description: description || "",
     });
 
-    // 為參與員工增加剩餘補休時數
+    // 為參與員工增加剩餘補休天數
     await addCompensatoryHoursToEmployees(participantEmails, hoursNum);
 
     return NextResponse.json({
@@ -151,7 +151,7 @@ export async function PUT(request: Request) {
 
     if (isNaN(newHours) || newHours <= 0) {
       return NextResponse.json(
-        { success: false, message: "補休時數必須為正數" },
+        { success: false, message: "補休天數必須為正數" },
         { status: 400 }
       );
     }
@@ -223,7 +223,7 @@ export async function DELETE(request: Request) {
       .filter(Boolean);
     const hours = parseFloat(activity.hours);
 
-    // 從參與員工扣回補休時數
+    // 從參與員工扣回補休天數
     if (participantEmails.length > 0 && hours > 0) {
       await subtractCompensatoryHoursFromEmployees(participantEmails, hours);
     }

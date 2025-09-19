@@ -57,7 +57,7 @@ export type OvertimeActivityRow = {
   id: string;
   name: string; // 活動名稱
   date: string; // 活動日期
-  hours: string; // 補休時數
+  hours: string; // 補休天數
   participants: string; // 參與員工 email，用逗號分隔
   description?: string; // 活動描述
   created_at?: string;
@@ -776,7 +776,7 @@ export async function deleteOvertimeActivity(id: string): Promise<boolean> {
   return false;
 }
 
-// 為多個員工增加剩餘補休時數
+// 為多個員工增加剩餘補休天數
 export async function addCompensatoryHoursToEmployees(
   emails: string[],
   hours: number
@@ -795,7 +795,7 @@ export async function addCompensatoryHoursToEmployees(
   }
 }
 
-// 為多個員工減少剩餘補休時數
+// 為多個員工減少剩餘補休天數
 export async function subtractCompensatoryHoursFromEmployees(
   emails: string[],
   hours: number
